@@ -7,7 +7,7 @@
 - Extract subtitle tracks from MKV files using MKVToolNix
 - Support for SRT, ASS, and SUP (PGS) subtitle formats
 - Track export selection using language codes, track numbers, or any combination of both
-- **Flexible output control**: custom directories, filename templates, and auto-directory creation
+- Flexible output control: custom directories, filename templates, and auto-directory creation
 - Automatic file naming based on track properties (language, number, name, forced status)
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
