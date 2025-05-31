@@ -25,11 +25,13 @@
 2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/).
   - Add to PATH system environment variables
 3. Clone the repository and navigate to the project directory:
+
     ```sh
     git clone https://github.com/matthane/subscalpelmkv.git
     cd subscalpelmkv
     ```
 4. Build the project:
+
     ```sh
     go build -o subscalpelmkv
     ```
@@ -87,7 +89,7 @@ Drag an MKV file onto the executable for interactive mode:
 | `--language` | `-l` | Language codes (comma-separated) |
 | `--tracks` | `-t` | Track numbers (comma-separated) |
 | `--selection` | `-s` | Mixed language codes and track numbers |
-| `--info` |  | Show detailed information about subtitle tracks |
+| `--info` | `-i` | Show detailed information about subtitle tracks |
 | `--help` | `-h` | Show help message |
 
 #### Supported Language Codes
@@ -117,9 +119,6 @@ Drag an MKV file onto the executable for interactive mode:
 
 # Extract only French subtitle tracks
 ./subscalpelmkv -x example.mkv -l fr
-```
-# Show detailed information about subtitle tracks
-./subscalpelmkv --info example.mkv
 ```
 
 The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using language filtering, only tracks matching the specified language code will be extracted.
