@@ -59,31 +59,31 @@ Drag an MKV file onto the executable for interactive mode:
 #### Basic Usage
 ```sh
 # Extract all subtitle tracks
-./subscalpelmkv -x video.mkv
+./subscalpelmkv -x "path/to/video.mkv"
 ```
 
 #### Language Filtering
 ```sh
 # Single language
-./subscalpelmkv -x video.mkv -l eng
+./subscalpelmkv -x "path/to/video.mkv" -l eng
 
 # Multiple languages
-./subscalpelmkv -x video.mkv -l eng,spa,fre
+./subscalpelmkv -x "path/to/video.mkv" -l eng,spa,fre
 ```
 
 #### Track Selection
 ```sh
 # Specific track numbers
-./subscalpelmkv -x video.mkv -t 3,5,7
+./subscalpelmkv -x "path/to/video.mkv" -t 3,5,7
 
 # Mixed language and track selection
-./subscalpelmkv -x video.mkv -s eng,3,spa,7
+./subscalpelmkv -x "path/to/video.mkv" -s eng,3,spa,7
 ```
 
 #### Info Flag Usage
 ```sh
 # Show information about available subtitle tracks
-./subscalpelmkv -i video.mkv
+./subscalpelmkv -i "path/to/video.mkv"
 ```
 
 #### Command Line Options
