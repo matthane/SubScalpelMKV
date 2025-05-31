@@ -49,6 +49,23 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool) e
 		return errors.New("file is not an MKV file")
 	}
 
+	// Step 0: Get original track information to preserve track numbers
+	fmt.Println("Analyzing original file...")
+	originalMkvInfo, err := mkv.GetTrackInfo(inputFileName)
+	if err != nil {
+		fmt.Printf("Error analyzing original file: %v\n", err)
+		return err
+	}
+
+	// Create an ordered list of original tracks that match the selection criteria
+	// This preserves the order in which tracks appear in the original file
+	var selectedOriginalTracks []model.MKVTrack
+	for _, track := range originalMkvInfo.Tracks {
+		if track.Type == "subtitles" && util.MatchesTrackSelection(track, selection) {
+			selectedOriginalTracks = append(selectedOriginalTracks, track)
+		}
+	}
+
 	// Step 1: Create .mks file with only selected subtitle tracks using mkv package
 	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection)
 	if mksErr != nil {
@@ -57,7 +74,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool) e
 	// Ensure cleanup of temporary .mks file using mkv package
 	defer mkv.CleanupTempFile(mksFileName)
 
-	// Step 2: Get track information using mkv package
+	// Step 2: Get track information from the temporary .mks file
 	fmt.Println("Step 2: Analyzing subtitle tracks...")
 	mkvInfo, err := mkv.GetTrackInfo(mksFileName)
 	if err != nil {
@@ -68,12 +85,25 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool) e
 	// Step 3: Extract subtitles using mkv and util packages
 	fmt.Println("Step 3: Extracting subtitle tracks...")
 	extractedCount := 0
+	mksTrackIndex := 0
+
 	for _, track := range mkvInfo.Tracks {
 		if track.Type == "subtitles" {
-			// Build output filename using util package
-			outFileName := util.BuildSubtitlesFileName(inputFileName, track)
-			// Extract subtitles using mkv package
-			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName)
+			// Use the corresponding original track based on order
+			// The .mks file should contain tracks in the same order as they were selected
+			var originalTrack model.MKVTrack
+			if mksTrackIndex < len(selectedOriginalTracks) {
+				originalTrack = selectedOriginalTracks[mksTrackIndex]
+			} else {
+				fmt.Printf("Warning: Track index mismatch, using renumbered track info for track %d\n", track.Id)
+				originalTrack = track
+			}
+			mksTrackIndex++
+
+			// Build output filename using the original track information
+			outFileName := util.BuildSubtitlesFileName(inputFileName, originalTrack)
+			// Extract subtitles using mkv package (use the .mks file track ID for extraction)
+			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName, originalTrack.Properties.Number)
 			if extractSubsErr != nil {
 				fmt.Printf("Error extracting subtitles: %v\n", extractSubsErr)
 				return extractSubsErr

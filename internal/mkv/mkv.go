@@ -36,7 +36,7 @@ func GetTrackInfo(inputFileName string) (*model.MKVInfo, error) {
 }
 
 // ExtractSubtitles extracts a subtitle track from an MKV file
-func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName string) error {
+func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName string, originalTrackNumber int) error {
 	cmd := exec.Command(
 		"mkvextract",
 		fmt.Sprintf("%v", inputFileName),
@@ -49,7 +49,7 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 		fmt.Println(string(output))
 		return cmdErr
 	}
-	fmt.Printf("  ✓ Extracted track %d (%s) -> %s\n", track.Properties.Number, track.Properties.Language, outFileName)
+	fmt.Printf("  ✓ Extracted track %d (%s) -> %s\n", originalTrackNumber, track.Properties.Language, outFileName)
 	return nil
 }
 
@@ -109,7 +109,17 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	if len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 {
 		subtitleTracks := strings.Join(selectedTrackIDs, ",")
 		args = append(args, "--subtitle-tracks", subtitleTracks)
-		fmt.Printf("  Including subtitle tracks: %s\n", subtitleTracks)
+
+		// Build display list using track.Properties.Number for user-friendly output
+		var displayTrackNumbers []string
+		for _, track := range originalMkvInfo.Tracks {
+			if track.Type == "subtitles" {
+				if matchesTrackSelection(track, selection) {
+					displayTrackNumbers = append(displayTrackNumbers, strconv.Itoa(track.Properties.Number))
+				}
+			}
+		}
+		fmt.Printf("  Including subtitle tracks: %s\n", strings.Join(displayTrackNumbers, ","))
 	}
 
 	args = append(args, inputFileName)
