@@ -22,14 +22,18 @@
 ## Installation
 
 1. Install Go from [golang.org](https://golang.org/dl/)
+
 2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/)
     - Add to PATH system environment variables
+
 3. Clone the repository and navigate to the project directory:
+
     ```sh
     git clone https://github.com/matthane/subscalpelmkv.git
     cd subscalpelmkv
     ```
-4. Build the project:    
+4. Build the project:
+
     ```sh
     go build -o subscalpelmkv
     ```
@@ -41,7 +45,9 @@
 Drag an MKV file onto the executable for interactive mode:
 
 1. The tool analyzes the file and displays available subtitle tracks
+
 2. Choose to extract all tracks or make a custom selection
+
 3. For custom selection, enter:
     - Language codes: `eng`, `spa`, `fre`
     - Track numbers: `3`, `5`, `7`
