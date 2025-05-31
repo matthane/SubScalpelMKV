@@ -1,0 +1,172 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/devfacet/gocmd/v3"
+
+	"subscalpelmkv/internal/cli"
+	"subscalpelmkv/internal/mkv"
+	"subscalpelmkv/internal/model"
+	"subscalpelmkv/internal/util"
+)
+
+const (
+	ErrCodeSuccess = 0
+	ErrCodeFailure = 1
+)
+
+// processFile handles the actual subtitle extraction logic
+func processFile(inputFileName, languageFilter string, showFilterMessage bool) error {
+	// Parse track selection using cli package
+	var selection model.TrackSelection
+	if languageFilter != "" {
+		selection = cli.ParseTrackSelection(languageFilter)
+		if showFilterMessage {
+			if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
+				fmt.Printf("Track filter: languages %v and track numbers %v (only muxing and extracting matching tracks)\n",
+					selection.LanguageCodes, selection.TrackNumbers)
+			} else if len(selection.LanguageCodes) > 0 {
+				fmt.Printf("Language filter: %v (only muxing and extracting matching tracks)\n", selection.LanguageCodes)
+			} else {
+				fmt.Printf("Track number filter: %v (only muxing and extracting matching tracks)\n", selection.TrackNumbers)
+			}
+		}
+	} else if showFilterMessage {
+		fmt.Println("No filter - muxing and extracting all subtitle tracks")
+	}
+
+	// Validate input file using util package
+	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
+		fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+		return statErr
+	}
+	if !util.IsMKVFile(inputFileName) {
+		fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+		return errors.New("file is not an MKV file")
+	}
+
+	// Step 1: Create .mks file with only selected subtitle tracks using mkv package
+	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection)
+	if mksErr != nil {
+		return mksErr
+	}
+	// Ensure cleanup of temporary .mks file using mkv package
+	defer mkv.CleanupTempFile(mksFileName)
+
+	// Step 2: Get track information using mkv package
+	fmt.Println("Step 2: Analyzing subtitle tracks...")
+	mkvInfo, err := mkv.GetTrackInfo(mksFileName)
+	if err != nil {
+		fmt.Printf("Error analyzing subtitle tracks: %v\n", err)
+		return err
+	}
+
+	// Step 3: Extract subtitles using mkv and util packages
+	fmt.Println("Step 3: Extracting subtitle tracks...")
+	extractedCount := 0
+	for _, track := range mkvInfo.Tracks {
+		if track.Type == "subtitles" {
+			// Build output filename using util package
+			outFileName := util.BuildSubtitlesFileName(inputFileName, track)
+			// Extract subtitles using mkv package
+			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName)
+			if extractSubsErr != nil {
+				fmt.Printf("Error extracting subtitles: %v\n", extractSubsErr)
+				return extractSubsErr
+			}
+			extractedCount++
+		}
+	}
+
+	fmt.Println()
+	if extractedCount == 0 {
+		fmt.Println("No subtitle tracks found or no tracks matched the language filter")
+	} else {
+		fmt.Printf("✓ Successfully extracted %d subtitle track(s)\n", extractedCount)
+	}
+
+	return nil
+}
+
+func main() {
+	fmt.Println("SubScalpelMKV")
+	fmt.Println("=============")
+
+	// Parse command-line arguments using gocmd
+	args := os.Args[1:]
+
+	// Check for help flags first
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" {
+			cli.ShowHelp()
+			os.Exit(ErrCodeSuccess)
+		}
+	}
+
+	// Detect execution mode: drag-and-drop vs CLI
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		// Drag-and-drop mode
+		inputFileName := strings.Join(args, " ")
+
+		// Validate file exists and is MKV
+		if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
+			fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+			fmt.Println("Press Enter to exit...")
+			fmt.Scanln()
+			os.Exit(ErrCodeFailure)
+		}
+		if !util.IsMKVFile(inputFileName) {
+			fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+			fmt.Println("Press Enter to exit...")
+			fmt.Scanln()
+			os.Exit(ErrCodeFailure)
+		}
+
+		// Handle drag-and-drop mode using CLI package
+		err := cli.HandleDragAndDropMode(inputFileName, processFile)
+		if err != nil {
+			os.Exit(ErrCodeFailure)
+		}
+		os.Exit(ErrCodeSuccess)
+	}
+
+	// CLI mode - set up command-line flags
+	flags := struct {
+		Extract   string `short:"x" long:"extract" description:"Extract subtitles from MKV file" required:"true"`
+		Language  string `short:"l" long:"language" description:"Language codes to filter subtitle tracks (e.g., 'eng', 'spa', 'fre'). Use comma-separated values for multiple languages. If not specified, all subtitle tracks will be extracted"`
+		Tracks    string `short:"t" long:"tracks" description:"Specific track numbers to extract (e.g., '3,5,7'). Use comma-separated values for multiple tracks"`
+		Selection string `short:"s" long:"selection" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7'). Combines language and track filtering"`
+	}{}
+
+	// Handle extract flag
+	_, extractHandleFlagErr := gocmd.HandleFlag("Extract", func(cmd *gocmd.Cmd, args []string) error {
+		inputFileName := flags.Extract
+		selectionFilter := cli.BuildSelectionFilter(flags.Language, flags.Tracks, flags.Selection)
+		return processFile(inputFileName, selectionFilter, true)
+	})
+
+	if extractHandleFlagErr != nil {
+		fmt.Printf("Error handling command flags: %v\n", extractHandleFlagErr)
+		os.Exit(ErrCodeFailure)
+	}
+
+	// Initialize gocmd
+	_, cmdErr := gocmd.New(gocmd.Options{
+		Name:        "subscalpelmkv",
+		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files quickly and precisely like a scalpel blade. Supports drag-and-drop: simply drag an MKV file onto the executable.",
+		Version:     "1.0.0",
+		Flags:       &flags,
+		ConfigType:  gocmd.ConfigTypeAuto,
+	})
+
+	if cmdErr != nil {
+		fmt.Printf("Error creating command: %v\n", cmdErr)
+		return
+	}
+
+	os.Exit(ErrCodeSuccess)
+}
