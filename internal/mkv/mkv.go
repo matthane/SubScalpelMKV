@@ -63,9 +63,22 @@ func CleanupTempFile(fileName string) {
 }
 
 // CreateSubtitlesMKS creates a .mks file containing only selected subtitle tracks from the input MKV file
-func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, matchesTrackSelection func(model.MKVTrack, model.TrackSelection) bool) (string, error) {
-	// Create temporary .mks file path
-	dir := filepath.Dir(inputFileName)
+func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, matchesTrackSelection func(model.MKVTrack, model.TrackSelection) bool, outputConfig model.OutputConfig) (string, error) {
+	// Create temporary .mks file path - use the same directory as the output files
+	var dir string
+	if outputConfig.OutputDir != "" {
+		dir = outputConfig.OutputDir
+		// Create output directory if requested and it doesn't exist
+		if outputConfig.CreateDir {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				fmt.Printf("Warning: Could not create output directory %s: %v\n", dir, err)
+				// Fall back to input file directory
+				dir = filepath.Dir(inputFileName)
+			}
+		}
+	} else {
+		dir = filepath.Dir(inputFileName)
+	}
 	baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
 	mksFileName := filepath.Join(dir, baseName+".subtitles.mks")
 

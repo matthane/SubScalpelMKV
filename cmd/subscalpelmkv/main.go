@@ -67,7 +67,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	}
 
 	// Step 1: Create .mks file with only selected subtitle tracks using mkv package
-	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection)
+	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection, outputConfig)
 	if mksErr != nil {
 		return mksErr
 	}
@@ -124,7 +124,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 
 func main() {
 	fmt.Println("🗡️ SubScalpelMKV")
-	fmt.Println("=============")
+	fmt.Println("=================")
 
 	// Parse command-line arguments using gocmd
 	args := os.Args[1:]
