@@ -28,7 +28,10 @@ func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
 		outFileName = fmt.Sprintf("%s.%s", outFileName, track.Properties.TrackName)
 	}
 	if track.Properties.Forced {
-		outFileName = fmt.Sprintf("%s.%s", outFileName, ".forced")
+		outFileName = fmt.Sprintf("%s.%s", outFileName, "forced")
+	}
+	if track.Properties.Default {
+		outFileName = fmt.Sprintf("%s.%s", outFileName, "default")
 	}
 	outFileName = fmt.Sprintf("%s.%s", outFileName, model.SubtitleExtensionByCodec[track.Properties.CodecId])
 	outFileName = path.Join(baseDir, outFileName)
