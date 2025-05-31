@@ -1,14 +1,12 @@
 # SubScalpelMKV
 
-`subscalpelmkv` is a command-line tool written in Go for extracting subtitles from MKV files quickly and precisely. It is a fork/overhaul of [GMM MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract) with many new features for increased speed and capability. Namely, video files only have to be parsed/read one time regardless of how many subtitle tracks are being exported.
+`subscalpelmkv` is a cross-platform command-line tool written in Go for extracting subtitles from MKV files quickly and precisely. It is a fork/overhaul of [GMM MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract) with many new features for increased speed and capability.
 
 ## Features
 
 - Extract subtitle tracks from MKV files using MKVToolNix
 - Support for SRT, ASS, and SUP (PGS) subtitle formats
-- Language filtering using ISO 639-1 (2-letter) or ISO 639-2 (3-letter) codes
-- Track number selection for precise control
-- Mixed selection combining language codes and track numbers
+- Track export selection using language codes, track numbers, or any combination of both
 - Automatic file naming based on track properties (language, number, name, forced status)
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
@@ -35,10 +33,10 @@
 4. Build the project:
 
     ```sh
-    go build -o subscalpelmkv
+    go build -o subscalpelmkv cmd/subscalpelmkv/main.go
 
     # For Windows
-    go build -o subscalpelmkv.exe
+    go build -o subscalpelmkv.exe cmd/subscalpelmkv/main.go
     ```
 
 ## Usage
