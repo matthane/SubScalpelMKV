@@ -106,14 +106,14 @@ The tool will extract subtitle tracks from `example.mkv` and save them with appr
 
 Output files are named using the pattern:
 ```
-<original_filename>.<language>.<track_number>[.<track_name>][.forced].<extension>
+<original_filename>.<language>.<track_number>[.forced/.default].<extension>
 ```
 
 Examples:
-- `movie.en.001.srt` - English SRT subtitle, track 1
-- `movie.es.002.Spanish.ass` - Spanish ASS subtitle, track 2, with track name
-- `movie.en.003.forced.srt` - English forced SRT subtitle, track 3
-
+- `movie.eng.001.srt` - English SRT subtitle, track 1
+- `movie.spa.002.ass` - Spanish ASS subtitle, track 2
+- `movie.eng.003.forced.sup` - English forced SUP subtitle, track 3
+- `movie.fre.004.default.sup` - French default SUP subtitle, track 4
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE.md` file for details.
