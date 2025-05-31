@@ -148,10 +148,10 @@ func ParseTrackSelection(input string) model.TrackSelection {
 func ShowHelp() {
 	fmt.Println("\nUsage:")
 	fmt.Println("  subscalpelmkv [OPTIONS] <file>")
-	fmt.Println("  subscalpelmkv -x <file> [selection options]")
+	fmt.Println("  subscalpelmkv -x <file> [selection options] [output options]")
 	fmt.Println("  subscalpelmkv -i <file>")
 	fmt.Println()
-	fmt.Println("Options:")
+	fmt.Println("Selection Options:")
 	fmt.Println("  -x, --extract <file>       Extract subtitles from MKV file")
 	fmt.Println("  -i, --info <file>          Display subtitle track information")
 	fmt.Println("  -l, --language <codes>     Language codes to filter subtitle tracks")
@@ -162,6 +162,14 @@ func ShowHelp() {
 	fmt.Println("                             values for multiple tracks")
 	fmt.Println("  -s, --selection <mixed>    Mixed selection of language codes and track")
 	fmt.Println("                             numbers (e.g., 'eng,3,spa,7')")
+	fmt.Println()
+	fmt.Println("Output Options:")
+	fmt.Println("  -o, --output-dir <dir>     Output directory for extracted subtitle files")
+	fmt.Println("                             (default: same directory as input file)")
+	fmt.Println("  -f, --format <template>    Custom filename template with placeholders:")
+	fmt.Println("                             {basename}, {language}, {trackno}, {trackname},")
+	fmt.Println("                             {forced}, {default}, {extension}")
+	fmt.Println("  -c, --create-dir           Create output directory if it doesn't exist")
 	fmt.Println("  -h, --help                 Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
@@ -171,7 +179,13 @@ func ShowHelp() {
 	fmt.Println("  subscalpelmkv -x video.mkv -l eng,spa")
 	fmt.Println("  subscalpelmkv -x video.mkv -t 3,5")
 	fmt.Println("  subscalpelmkv -x video.mkv -s eng,3,spa,7")
+	fmt.Println("  subscalpelmkv -x video.mkv -o ./subtitles")
+	fmt.Println("  subscalpelmkv -x video.mkv -o ./subtitles -c")
+	fmt.Println("  subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	fmt.Println("  subscalpelmkv video.mkv    (drag-and-drop mode)")
+	fmt.Println()
+	fmt.Println("Default filename template:")
+	fmt.Println("  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}")
 	fmt.Println()
 	fmt.Println("Language codes:")
 	fmt.Println("  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes")
@@ -221,8 +235,24 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 	fmt.Println()
 }
 
-// HandleDragAndDropMode handles the interactive drag-and-drop mode
+// HandleDragAndDropMode handles the interactive drag-and-drop mode (backward compatibility)
 func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, string, bool) error) error {
+	// Create a wrapper function that adds default output config
+	wrapperFunc := func(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
+		return processFileFunc(inputFileName, languageFilter, showFilterMessage)
+	}
+
+	defaultOutputConfig := model.OutputConfig{
+		OutputDir: "",
+		Template:  model.DefaultOutputTemplate,
+		CreateDir: false,
+	}
+
+	return HandleDragAndDropModeWithConfig(inputFileName, wrapperFunc, defaultOutputConfig)
+}
+
+// HandleDragAndDropModeWithConfig handles the interactive drag-and-drop mode with output configuration
+func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig) error, outputConfig model.OutputConfig) error {
 	fmt.Printf("Processing file: %s\n", inputFileName)
 
 	// Get track information using mkv package to show available subtitle tracks
@@ -291,7 +321,7 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 		fmt.Println("\nExtracting all subtitle tracks...")
 	}
 
-	err = processFileFunc(inputFileName, languageFilter, false)
+	err = processFileFunc(inputFileName, languageFilter, false, outputConfig)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		fmt.Println("Press Enter to exit...")

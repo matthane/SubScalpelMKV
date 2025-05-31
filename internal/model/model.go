@@ -145,6 +145,16 @@ type TrackSelection struct {
 	TrackNumbers  []int
 }
 
+// OutputConfig represents output configuration options
+type OutputConfig struct {
+	OutputDir string // Custom output directory
+	Template  string // Filename template with placeholders
+	CreateDir bool   // Whether to create output directory if it doesn't exist
+}
+
+// DefaultOutputTemplate is the default filename template
+const DefaultOutputTemplate = "{basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}"
+
 // SubtitleExtensionByCodec maps codec IDs to file extensions
 var SubtitleExtensionByCodec = map[string]string{
 	"S_TEXT/UTF8": "srt",

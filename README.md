@@ -7,6 +7,7 @@
 - Extract subtitle tracks from MKV files using MKVToolNix
 - Support for SRT, ASS, and SUP (PGS) subtitle formats
 - Track export selection using language codes, track numbers, or any combination of both
+- **Flexible output control**: custom directories, filename templates, and auto-directory creation
 - Automatic file naming based on track properties (language, number, name, forced status)
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
@@ -80,6 +81,21 @@ Drag an MKV file onto the executable for interactive mode:
 ./subscalpelmkv -x "path/to/video.mkv" -s eng,3,spa,7
 ```
 
+#### Output Control
+```sh
+# Custom output directory
+./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles
+
+# Custom output directory with auto-creation if it doesn't exist
+./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles -c
+
+# Custom filename template
+./subscalpelmkv -x "path/to/video.mkv" -f "{basename}-{language}.{extension}"
+
+# Combined: custom directory, template, and language filter
+./subscalpelmkv -x "path/to/video.mkv" -l eng,spa -o ./subs -f "{language}-{trackno}.{extension}" -c
+```
+
 #### Info Flag Usage
 ```sh
 # Show information about available subtitle tracks
@@ -88,6 +104,7 @@ Drag an MKV file onto the executable for interactive mode:
 
 #### Command Line Options
 
+##### Selection Options
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--extract` | `-x` | Path to MKV file (required) |
@@ -97,6 +114,13 @@ Drag an MKV file onto the executable for interactive mode:
 | `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
 
+##### Output Options
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--output-dir` | `-o` | Custom output directory (default: same as input file) |
+| `--format` | `-f` | Custom filename template with placeholders |
+| `--create-dir` | `-c` | Create output directory if it doesn't exist |
+
 #### Supported Language Codes
 - **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
 - **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
@@ -105,9 +129,10 @@ The tool will extract subtitle tracks from `example.mkv` and save them with appr
 
 ### Output File Naming
 
-Output files are named using the pattern:
+#### Default Naming Pattern
+By default, output files are named using the pattern:
 ```
-<original_filename>.<language>.<track_number>[.forced/.default].<extension>
+<original_filename>.<language>.<track_number>[.track_name][.forced][.default].<extension>
 ```
 
 Examples:
@@ -115,6 +140,50 @@ Examples:
 - `movie.spa.002.ass` - Spanish ASS subtitle, track 2
 - `movie.eng.003.forced.sup` - English forced SUP subtitle, track 3
 - `movie.fre.004.default.sup` - French default SUP subtitle, track 4
+
+#### Custom Filename Templates
+You can customize the output filename format using the `-f` flag with placeholders:
+
+**Available Placeholders:**
+- `{basename}` - Original filename without extension
+- `{language}` - Track language code (e.g., "eng", "spa")
+- `{trackno}` - Track number (3-digit padded, e.g., "001", "042")
+- `{trackname}` - Track name (if available)
+- `{forced}` - "forced" if track is forced, empty otherwise
+- `{default}` - "default" if track is default, empty otherwise
+- `{extension}` - Subtitle file extension (srt, ass, sup)
+
+**Template Examples:**
+```sh
+# Simple format: movie-eng.srt
+-f "{basename}-{language}.{extension}"
+
+# Include track numbers: eng-001.srt
+-f "{language}-{trackno}.{extension}"
+
+# Detailed format: movie.english.track001.srt
+-f "{basename}.{language}.track{trackno}.{extension}"
+
+# Organized by language: eng/movie.srt
+-f "{language}/{basename}.{extension}"
+```
+
+#### Output Directory Control
+- **Default**: Files are saved in the same directory as the input MKV file
+- **Custom Directory**: Use `-o` to specify a different output directory
+- **Auto-Create**: Use `-c` with `-o` to automatically create the output directory if it doesn't exist
+
+**Directory Examples:**
+```sh
+# Save to specific directory
+./subscalpelmkv -x movie.mkv -o ./extracted-subtitles
+
+# Create directory if it doesn't exist
+./subscalpelmkv -x movie.mkv -o ./new-folder -c
+
+# Organize by movie name
+./subscalpelmkv -x movie.mkv -o "./subtitles/movie-name" -c
+```
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE.md` file for details.

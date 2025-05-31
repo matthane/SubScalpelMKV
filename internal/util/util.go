@@ -2,8 +2,8 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"subscalpelmkv/internal/model"
@@ -18,24 +18,104 @@ func IsMKVFile(inputFileName string) bool {
 
 // BuildSubtitlesFileName builds the output filename for extracted subtitles
 func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
-	baseDir := filepath.Dir(inputFileName)
+	// Use default configuration for backward compatibility
+	config := model.OutputConfig{
+		OutputDir: "",
+		Template:  model.DefaultOutputTemplate,
+		CreateDir: false,
+	}
+	return BuildSubtitlesFileNameWithConfig(inputFileName, track, config)
+}
+
+// BuildSubtitlesFileNameWithConfig builds the output filename using custom configuration
+func BuildSubtitlesFileNameWithConfig(inputFileName string, track model.MKVTrack, config model.OutputConfig) string {
+	// Determine output directory
+	var outputDir string
+	if config.OutputDir != "" {
+		outputDir = config.OutputDir
+	} else {
+		outputDir = filepath.Dir(inputFileName)
+	}
+
+	// Create output directory if requested and it doesn't exist
+	if config.CreateDir && config.OutputDir != "" {
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			fmt.Printf("Warning: Could not create output directory %s: %v\n", outputDir, err)
+			// Fall back to input file directory
+			outputDir = filepath.Dir(inputFileName)
+		}
+	}
+
+	// Build filename using template
+	fileName := BuildFileNameFromTemplate(inputFileName, track, config.Template)
+
+	return filepath.Join(outputDir, fileName)
+}
+
+// BuildFileNameFromTemplate builds a filename using a template with placeholders
+func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, template string) string {
+	if template == "" {
+		template = model.DefaultOutputTemplate
+	}
+
+	// Extract components from input filename
 	fileName := filepath.Base(inputFileName)
 	extension := filepath.Ext(fileName)
 	baseName := strings.TrimSuffix(fileName, extension)
-	trackNo := fmt.Sprintf("%03s", strconv.Itoa(track.Properties.Number))
-	outFileName := fmt.Sprintf("%s.%s.%s", baseName, track.Properties.Language, trackNo)
-	if track.Properties.TrackName != "" {
-		outFileName = fmt.Sprintf("%s.%s", outFileName, track.Properties.TrackName)
+
+	// Get subtitle extension
+	subtitleExt := model.SubtitleExtensionByCodec[track.Properties.CodecId]
+	if subtitleExt == "" {
+		subtitleExt = "srt" // fallback
 	}
+
+	// Format track number with leading zeros
+	trackNo := fmt.Sprintf("%03d", track.Properties.Number)
+
+	// Build replacement map
+	replacements := map[string]string{
+		"{basename}":  baseName,
+		"{language}":  track.Properties.Language,
+		"{trackno}":   trackNo,
+		"{trackname}": track.Properties.TrackName,
+		"{forced}":    "",
+		"{default}":   "",
+		"{extension}": subtitleExt,
+	}
+
+	// Handle conditional flags
 	if track.Properties.Forced {
-		outFileName = fmt.Sprintf("%s.%s", outFileName, "forced")
+		replacements["{forced}"] = "forced"
 	}
 	if track.Properties.Default {
-		outFileName = fmt.Sprintf("%s.%s", outFileName, "default")
+		replacements["{default}"] = "default"
 	}
-	outFileName = fmt.Sprintf("%s.%s", outFileName, model.SubtitleExtensionByCodec[track.Properties.CodecId])
-	outFileName = filepath.Join(baseDir, outFileName)
-	return outFileName
+
+	// Apply replacements
+	result := template
+	for placeholder, value := range replacements {
+		result = strings.ReplaceAll(result, placeholder, value)
+	}
+
+	// Clean up multiple consecutive dots and trailing dots
+	result = cleanupFileName(result)
+
+	return result
+}
+
+// cleanupFileName removes empty segments and cleans up the filename
+func cleanupFileName(filename string) string {
+	// Split by dots and remove empty segments
+	parts := strings.Split(filename, ".")
+	var cleanParts []string
+
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+
+	return strings.Join(cleanParts, ".")
 }
 
 // MatchesTrackSelection checks if a track matches the user's selection criteria

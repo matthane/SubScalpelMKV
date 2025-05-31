@@ -20,7 +20,7 @@ const (
 )
 
 // processFile handles the actual subtitle extraction logic
-func processFile(inputFileName, languageFilter string, showFilterMessage bool) error {
+func processFile(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
 	// Parse track selection using cli package
 	var selection model.TrackSelection
 	if languageFilter != "" {
@@ -100,8 +100,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool) e
 			}
 			mksTrackIndex++
 
-			// Build output filename using the original track information
-			outFileName := util.BuildSubtitlesFileName(inputFileName, originalTrack)
+			// Build output filename using the original track information and output config
+			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, originalTrack, outputConfig)
 			// Extract subtitles using mkv package (use the .mks file track ID for extraction)
 			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName, originalTrack.Properties.Number)
 			if extractSubsErr != nil {
@@ -156,8 +156,13 @@ func main() {
 			os.Exit(ErrCodeFailure)
 		}
 
-		// Handle drag-and-drop mode using CLI package
-		err := cli.HandleDragAndDropMode(inputFileName, processFile)
+		// Handle drag-and-drop mode using CLI package with default output config
+		defaultOutputConfig := model.OutputConfig{
+			OutputDir: "",
+			Template:  model.DefaultOutputTemplate,
+			CreateDir: false,
+		}
+		err := cli.HandleDragAndDropModeWithConfig(inputFileName, processFile, defaultOutputConfig)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
@@ -166,11 +171,14 @@ func main() {
 
 	// CLI mode - set up command-line flags
 	flags := struct {
-		Extract   string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
-		Info      string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
-		Language  string `short:"l" long:"language" description:"Language codes to filter subtitle tracks (e.g., 'eng', 'spa', 'fre'). Use comma-separated values for multiple languages. If not specified, all subtitle tracks will be extracted"`
-		Tracks    string `short:"t" long:"tracks" description:"Specific track numbers to extract (e.g., '3,5,7'). Use comma-separated values for multiple tracks"`
-		Selection string `short:"s" long:"selection" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7'). Combines language and track filtering"`
+		Extract        string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
+		Info           string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
+		Language       string `short:"l" long:"language" description:"Language codes to filter subtitle tracks (e.g., 'eng', 'spa', 'fre'). Use comma-separated values for multiple languages. If not specified, all subtitle tracks will be extracted"`
+		Tracks         string `short:"t" long:"tracks" description:"Specific track numbers to extract (e.g., '3,5,7'). Use comma-separated values for multiple tracks"`
+		Selection      string `short:"s" long:"selection" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7'). Combines language and track filtering"`
+		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
+		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
+		CreateDir      bool   `short:"c" long:"create-dir" description:"Create output directory if it doesn't exist"`
 	}{}
 
 	// Initialize gocmd
@@ -197,7 +205,20 @@ func main() {
 		// Handle extract flag
 		inputFileName := flags.Extract
 		selectionFilter := cli.BuildSelectionFilter(flags.Language, flags.Tracks, flags.Selection)
-		err := processFile(inputFileName, selectionFilter, true)
+
+		// Build output configuration
+		outputConfig := model.OutputConfig{
+			OutputDir: flags.OutputDir,
+			Template:  flags.OutputTemplate,
+			CreateDir: flags.CreateDir,
+		}
+
+		// Use default template if none specified
+		if outputConfig.Template == "" {
+			outputConfig.Template = model.DefaultOutputTemplate
+		}
+
+		err := processFile(inputFileName, selectionFilter, true, outputConfig)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
