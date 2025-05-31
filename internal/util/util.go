@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"subscalpelmkv/internal/cli"
-	"subscalpelmkv/internal/mkv"
 	"subscalpelmkv/internal/model"
+	"subscalpelmkv/internal/progress"
 )
 
 // IsMKVFile checks if the given filename is an MKV file
@@ -31,45 +30,9 @@ func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
 	if track.Properties.Forced {
 		outFileName = fmt.Sprintf("%s.%s", outFileName, ".forced")
 	}
-	outFileName = fmt.Sprintf("%s.%s", outFileName, mkv.SubtitleExtensionByCodec[track.Properties.CodecId])
+	outFileName = fmt.Sprintf("%s.%s", outFileName, model.SubtitleExtensionByCodec[track.Properties.CodecId])
 	outFileName = path.Join(baseDir, outFileName)
 	return outFileName
-}
-
-// ShowProgressBar displays a progress bar based on percentage
-func ShowProgressBar(percentage int) {
-	const barWidth = 50
-	filled := int(float64(percentage) * float64(barWidth) / 100.0)
-
-	bar := "["
-	for i := 0; i < barWidth; i++ {
-		if i < filled {
-			bar += "="
-		} else if i == filled && percentage < 100 {
-			bar += ">"
-		} else {
-			bar += " "
-		}
-	}
-	bar += "]"
-
-	fmt.Printf("\rMuxing subtitle tracks... %s %3d%%", bar, percentage)
-	if percentage == 100 {
-		fmt.Println(" Complete!")
-	}
-}
-
-// ParseProgressLine extracts percentage from mkvmerge progress output
-func ParseProgressLine(line string) (int, bool) {
-	// In GUI mode, progress lines look like: "#GUI#progress 45%"
-	if strings.HasPrefix(line, "#GUI#progress ") && strings.HasSuffix(line, "%") {
-		percentStr := strings.TrimPrefix(line, "#GUI#progress ")
-		percentStr = strings.TrimSuffix(percentStr, "%")
-		if percentage, err := strconv.Atoi(strings.TrimSpace(percentStr)); err == nil {
-			return percentage, true
-		}
-	}
-	return 0, false
 }
 
 // MatchesTrackSelection checks if a track matches the user's selection criteria
@@ -88,7 +51,7 @@ func MatchesTrackSelection(track model.MKVTrack, selection model.TrackSelection)
 
 	// Check if language matches
 	for _, langCode := range selection.LanguageCodes {
-		if cli.MatchesLanguageFilter(track.Properties.Language, langCode) {
+		if model.MatchesLanguageFilter(track.Properties.Language, langCode) {
 			return true
 		}
 	}
@@ -103,10 +66,20 @@ func MatchesAnyLanguageFilter(trackLanguage string, languageFilters []string) bo
 	}
 
 	for _, filter := range languageFilters {
-		if cli.MatchesLanguageFilter(trackLanguage, filter) {
+		if model.MatchesLanguageFilter(trackLanguage, filter) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// ShowProgressBar displays a progress bar based on percentage
+func ShowProgressBar(percentage int) {
+	progress.ShowProgressBar(percentage)
+}
+
+// ParseProgressLine extracts percentage from mkvmerge progress output
+func ParseProgressLine(line string) (int, bool) {
+	return progress.ParseProgressLine(line)
 }

@@ -11,65 +11,6 @@ import (
 	"subscalpelmkv/internal/model"
 )
 
-// Language code mapping from ISO 639-1 (2-letter) to ISO 639-2 (3-letter)
-var languageCodeMapping = map[string]string{
-	"en": "eng", // English
-	"es": "spa", // Spanish
-	"fr": "fre", // French
-	"de": "ger", // German
-	"it": "ita", // Italian
-	"pt": "por", // Portuguese
-	"ru": "rus", // Russian
-	"ja": "jpn", // Japanese
-	"ko": "kor", // Korean
-	"zh": "chi", // Chinese
-	"ar": "ara", // Arabic
-	"hi": "hin", // Hindi
-	"nl": "dut", // Dutch
-	"sv": "swe", // Swedish
-	"no": "nor", // Norwegian
-	"da": "dan", // Danish
-	"fi": "fin", // Finnish
-	"pl": "pol", // Polish
-	"cs": "cze", // Czech
-	"hu": "hun", // Hungarian
-	"tr": "tur", // Turkish
-	"he": "heb", // Hebrew
-	"th": "tha", // Thai
-	"vi": "vie", // Vietnamese
-}
-
-// MatchesLanguageFilter checks if a track language matches the specified filter
-// Supports both 2-letter (ISO 639-1) and 3-letter (ISO 639-2) language codes
-func MatchesLanguageFilter(trackLanguage, filterLanguage string) bool {
-	if filterLanguage == "" {
-		return true // No filter specified, match all
-	}
-
-	// Direct match
-	if strings.EqualFold(trackLanguage, filterLanguage) {
-		return true
-	}
-
-	// Check if filter is 2-letter code and track uses 3-letter code
-	if len(filterLanguage) == 2 {
-		if mappedCode, exists := languageCodeMapping[strings.ToLower(filterLanguage)]; exists {
-			return strings.EqualFold(trackLanguage, mappedCode)
-		}
-	}
-
-	// Check if filter is 3-letter code and track uses 2-letter code
-	if len(filterLanguage) == 3 {
-		for twoLetter, threeLetter := range languageCodeMapping {
-			if strings.EqualFold(filterLanguage, threeLetter) {
-				return strings.EqualFold(trackLanguage, twoLetter)
-			}
-		}
-	}
-
-	return false
-}
-
 // AskUserConfirmation asks the user if they want to extract all tracks
 func AskUserConfirmation() bool {
 	reader := bufio.NewReader(os.Stdin)
@@ -134,9 +75,9 @@ func ParseLanguageCodes(input string) []string {
 		// Validate the language code
 		isValid := false
 		if len(code) == 2 {
-			_, isValid = languageCodeMapping[strings.ToLower(code)]
+			_, isValid = model.LanguageCodeMapping[strings.ToLower(code)]
 		} else if len(code) == 3 {
-			for _, threeLetter := range languageCodeMapping {
+			for _, threeLetter := range model.LanguageCodeMapping {
 				if strings.EqualFold(code, threeLetter) {
 					isValid = true
 					break
@@ -182,9 +123,9 @@ func ParseTrackSelection(input string) model.TrackSelection {
 		// Try to parse as language code
 		isValidLanguage := false
 		if len(item) == 2 {
-			_, isValidLanguage = languageCodeMapping[strings.ToLower(item)]
+			_, isValidLanguage = model.LanguageCodeMapping[strings.ToLower(item)]
 		} else if len(item) == 3 {
-			for _, threeLetter := range languageCodeMapping {
+			for _, threeLetter := range model.LanguageCodeMapping {
 				if strings.EqualFold(item, threeLetter) {
 					isValidLanguage = true
 					break
@@ -261,7 +202,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 
 			// Show codec type
 			codecType := "Unknown"
-			if ext, exists := mkv.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
+			if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
 				codecType = strings.ToUpper(ext)
 			}
 			trackInfo += fmt.Sprintf(" [%s]", codecType)
@@ -343,7 +284,7 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 			fmt.Printf("\nExtracting track numbers: %v\n\n", selection.TrackNumbers)
 		}
 	} else {
-		fmt.Println("\nExtracting all subtitle tracks...\n")
+		fmt.Println("\nExtracting all subtitle tracks...")
 	}
 
 	err = processFileFunc(inputFileName, languageFilter, false)

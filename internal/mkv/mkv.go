@@ -12,14 +12,8 @@ import (
 	"strings"
 
 	"subscalpelmkv/internal/model"
+	"subscalpelmkv/internal/util"
 )
-
-// SubtitleExtensionByCodec maps codec IDs to file extensions
-var SubtitleExtensionByCodec = map[string]string{
-	"S_TEXT/UTF8": "srt",
-	"S_TEXT/ASS":  "ass",
-	"S_HDMV/PGS":  "sup",
-}
 
 // GetTrackInfo gets track information from an MKV file using mkvmerge -J
 func GetTrackInfo(inputFileName string) (*model.MKVInfo, error) {
@@ -66,42 +60,6 @@ func CleanupTempFile(fileName string) {
 			// Silently ignore cleanup errors - not critical for user
 		}
 	}
-}
-
-// showProgressBar displays a progress bar based on percentage
-func showProgressBar(percentage int) {
-	const barWidth = 50
-	filled := int(float64(percentage) * float64(barWidth) / 100.0)
-
-	bar := "["
-	for i := 0; i < barWidth; i++ {
-		if i < filled {
-			bar += "="
-		} else if i == filled && percentage < 100 {
-			bar += ">"
-		} else {
-			bar += " "
-		}
-	}
-	bar += "]"
-
-	fmt.Printf("\rMuxing subtitle tracks... %s %3d%%", bar, percentage)
-	if percentage == 100 {
-		fmt.Println(" Complete!")
-	}
-}
-
-// parseProgressLine extracts percentage from mkvmerge progress output
-func parseProgressLine(line string) (int, bool) {
-	// In GUI mode, progress lines look like: "#GUI#progress 45%"
-	if strings.HasPrefix(line, "#GUI#progress ") && strings.HasSuffix(line, "%") {
-		percentStr := strings.TrimPrefix(line, "#GUI#progress ")
-		percentStr = strings.TrimSuffix(percentStr, "%")
-		if percentage, err := strconv.Atoi(strings.TrimSpace(percentStr)); err == nil {
-			return percentage, true
-		}
-	}
-	return 0, false
 }
 
 // CreateSubtitlesMKS creates a .mks file containing only selected subtitle tracks from the input MKV file
@@ -181,7 +139,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		line := scanner.Text()
 
 		// Check if this line contains progress information
-		if percentage, isProgress := parseProgressLine(line); isProgress {
+		if percentage, isProgress := util.ParseProgressLine(line); isProgress {
 			// Only start showing progress bar when we get non-zero progress
 			if percentage > 0 && !progressStarted {
 				// Clear the initializing message on first real progress update
@@ -191,7 +149,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 
 			// Only show progress bar if we've started (non-zero progress detected)
 			if progressStarted {
-				showProgressBar(percentage)
+				util.ShowProgressBar(percentage)
 			}
 		}
 	}
