@@ -21,9 +21,9 @@
 
 ## Installation
 
-1. Install Go from [golang.org](https://golang.org/dl/).
-2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/).
-  - Add to PATH system environment variables
+1. Install Go from [golang.org](https://golang.org/dl/)
+2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/)
+    - Add to PATH system environment variables
 3. Clone the repository and navigate to the project directory:
 
     ```sh
@@ -43,7 +43,9 @@
 Drag an MKV file onto the executable for interactive mode:
 
 1. The tool analyzes the file and displays available subtitle tracks
+
 2. Choose to extract all tracks or make a custom selection
+
 3. For custom selection, enter:
    - Language codes: `eng`, `spa`, `fre`
    - Track numbers: `3`, `5`, `7`
@@ -77,7 +79,7 @@ Drag an MKV file onto the executable for interactive mode:
 
 #### Info Flag Usage
 ```sh
-# Show detailed information about subtitle tracks
+# Show information about available subtitle tracks
 ./subscalpelmkv -i video.mkv
 ```
 
@@ -89,37 +91,12 @@ Drag an MKV file onto the executable for interactive mode:
 | `--language` | `-l` | Language codes (comma-separated) |
 | `--tracks` | `-t` | Track numbers (comma-separated) |
 | `--selection` | `-s` | Mixed language codes and track numbers |
-| `--info` | `-i` | Show detailed information about subtitle tracks |
+| `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
 
 #### Supported Language Codes
 - **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
 - **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
-
-## Examples
-
-### Drag and Drop Examples
-
-- **Interactive mode**: Simply drag `example.mkv` onto `subscalpelmkv.exe`
-
-### Command Line Examples
-
-```sh
-# Extract all subtitle tracks
-./subscalpelmkv -x example.mkv
-
-# Extract only English subtitle tracks (2-letter code)
-./subscalpelmkv -x example.mkv -l en
-
-# Extract only English subtitle tracks (3-letter code)
-./subscalpelmkv -x example.mkv -l eng
-
-# Extract only Spanish subtitle tracks
-./subscalpelmkv -x example.mkv -l es
-
-# Extract only French subtitle tracks
-./subscalpelmkv -x example.mkv -l fr
-```
 
 The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using language filtering, only tracks matching the specified language code will be extracted.
 
