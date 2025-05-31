@@ -123,7 +123,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool) e
 }
 
 func main() {
-	fmt.Println("SubScalpelMKV")
+	fmt.Println("🗡️ SubScalpelMKV")
 	fmt.Println("=============")
 
 	// Parse command-line arguments using gocmd
