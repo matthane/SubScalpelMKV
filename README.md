@@ -36,6 +36,9 @@
 
     ```sh
     go build -o subscalpelmkv
+
+    # For Windows
+    go build -o subscalpelmkv.exe
     ```
 
 ## Usage
