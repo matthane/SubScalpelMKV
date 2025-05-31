@@ -9,6 +9,7 @@ import (
 
 	"subscalpelmkv/internal/mkv"
 	"subscalpelmkv/internal/model"
+	"subscalpelmkv/internal/util"
 )
 
 // AskUserConfirmation asks the user if they want to extract all tracks
@@ -148,9 +149,11 @@ func ShowHelp() {
 	fmt.Println("\nUsage:")
 	fmt.Println("  subscalpelmkv [OPTIONS] <file>")
 	fmt.Println("  subscalpelmkv -x <file> [selection options]")
+	fmt.Println("  subscalpelmkv -i <file>")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  -x, --extract <file>       Extract subtitles from MKV file")
+	fmt.Println("  -i, --info <file>          Display subtitle track information")
 	fmt.Println("  -l, --language <codes>     Language codes to filter subtitle tracks")
 	fmt.Println("                             (e.g., 'eng', 'spa,fre'). Use comma-separated")
 	fmt.Println("                             values for multiple languages")
@@ -162,6 +165,7 @@ func ShowHelp() {
 	fmt.Println("  -h, --help                 Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
+	fmt.Println("  subscalpelmkv -i video.mkv")
 	fmt.Println("  subscalpelmkv -x video.mkv")
 	fmt.Println("  subscalpelmkv -x video.mkv -l eng")
 	fmt.Println("  subscalpelmkv -x video.mkv -l eng,spa")
@@ -315,4 +319,33 @@ func BuildSelectionFilter(language, tracks, selection string) string {
 	} else {
 		return language
 	}
+}
+
+// ShowFileInfo displays subtitle track information for a file without extracting
+func ShowFileInfo(inputFileName string) error {
+	// Validate input file using util package
+	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
+		fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+		return statErr
+	}
+
+	// Check if file is MKV using util package
+	if !util.IsMKVFile(inputFileName) {
+		fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+		return fmt.Errorf("file is not an MKV file")
+	}
+
+	fmt.Printf("Analyzing file: %s\n", inputFileName)
+
+	// Get track information using mkv package
+	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
+	if err != nil {
+		fmt.Printf("Error analyzing file: %v\n", err)
+		return err
+	}
+
+	// Display available subtitle tracks
+	DisplaySubtitleTracks(mkvInfo)
+
+	return nil
 }

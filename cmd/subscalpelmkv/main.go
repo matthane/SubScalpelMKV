@@ -136,23 +136,12 @@ func main() {
 
 	// CLI mode - set up command-line flags
 	flags := struct {
-		Extract   string `short:"x" long:"extract" description:"Extract subtitles from MKV file" required:"true"`
+		Extract   string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
+		Info      string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
 		Language  string `short:"l" long:"language" description:"Language codes to filter subtitle tracks (e.g., 'eng', 'spa', 'fre'). Use comma-separated values for multiple languages. If not specified, all subtitle tracks will be extracted"`
 		Tracks    string `short:"t" long:"tracks" description:"Specific track numbers to extract (e.g., '3,5,7'). Use comma-separated values for multiple tracks"`
 		Selection string `short:"s" long:"selection" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7'). Combines language and track filtering"`
 	}{}
-
-	// Handle extract flag
-	_, extractHandleFlagErr := gocmd.HandleFlag("Extract", func(cmd *gocmd.Cmd, args []string) error {
-		inputFileName := flags.Extract
-		selectionFilter := cli.BuildSelectionFilter(flags.Language, flags.Tracks, flags.Selection)
-		return processFile(inputFileName, selectionFilter, true)
-	})
-
-	if extractHandleFlagErr != nil {
-		fmt.Printf("Error handling command flags: %v\n", extractHandleFlagErr)
-		os.Exit(ErrCodeFailure)
-	}
 
 	// Initialize gocmd
 	_, cmdErr := gocmd.New(gocmd.Options{
@@ -166,6 +155,33 @@ func main() {
 	if cmdErr != nil {
 		fmt.Printf("Error creating command: %v\n", cmdErr)
 		return
+	}
+
+	// Check which flag was provided and handle accordingly
+	if flags.Extract != "" && flags.Info != "" {
+		fmt.Println("Error: Cannot use both --extract and --info flags simultaneously")
+		os.Exit(ErrCodeFailure)
+	}
+
+	if flags.Extract != "" {
+		// Handle extract flag
+		inputFileName := flags.Extract
+		selectionFilter := cli.BuildSelectionFilter(flags.Language, flags.Tracks, flags.Selection)
+		err := processFile(inputFileName, selectionFilter, true)
+		if err != nil {
+			os.Exit(ErrCodeFailure)
+		}
+	} else if flags.Info != "" {
+		// Handle info flag
+		inputFileName := flags.Info
+		err := cli.ShowFileInfo(inputFileName)
+		if err != nil {
+			os.Exit(ErrCodeFailure)
+		}
+	} else {
+		// No flags provided, show help
+		cli.ShowHelp()
+		os.Exit(ErrCodeFailure)
 	}
 
 	os.Exit(ErrCodeSuccess)
