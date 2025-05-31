@@ -56,6 +56,25 @@ func ShowProgressBar(percentage int) {
 	}
 }
 
+// formatDuration formats a time.Duration into a human-readable string
+func formatDuration(d time.Duration) string {
+	if d < time.Second {
+		return fmt.Sprintf("%dms", d.Milliseconds())
+	}
+
+	seconds := int(d.Seconds()) % 60
+	minutes := int(d.Minutes()) % 60
+	hours := int(d.Hours())
+
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	} else {
+		return fmt.Sprintf("%ds", seconds)
+	}
+}
+
 // renderProgressBar renders the progress bar to stdout
 func renderProgressBar(percentage int) {
 	// Calculate filled and empty portions
