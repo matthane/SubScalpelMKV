@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -18,9 +18,9 @@ func IsMKVFile(inputFileName string) bool {
 
 // BuildSubtitlesFileName builds the output filename for extracted subtitles
 func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
-	baseDir := path.Dir(inputFileName)
-	fileName := path.Base(inputFileName)
-	extension := path.Ext(fileName)
+	baseDir := filepath.Dir(inputFileName)
+	fileName := filepath.Base(inputFileName)
+	extension := filepath.Ext(fileName)
 	baseName := strings.TrimSuffix(fileName, extension)
 	trackNo := fmt.Sprintf("%03s", strconv.Itoa(track.Properties.Number))
 	outFileName := fmt.Sprintf("%s.%s.%s", baseName, track.Properties.Language, trackNo)
@@ -34,7 +34,7 @@ func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
 		outFileName = fmt.Sprintf("%s.%s", outFileName, "default")
 	}
 	outFileName = fmt.Sprintf("%s.%s", outFileName, model.SubtitleExtensionByCodec[track.Properties.CodecId])
-	outFileName = path.Join(baseDir, outFileName)
+	outFileName = filepath.Join(baseDir, outFileName)
 	return outFileName
 }
 
