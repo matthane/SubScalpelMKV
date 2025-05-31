@@ -1,0 +1,141 @@
+# SubScalpelMKV
+
+`subscalpelmkv` is a command-line tool written in Go for extracting subtitles from MKV files quickly and precisely. It is a fork/overhaul of [GMM MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract) with many new features for increased speed and capability. Namely, video files only have to be parsed/read one time regardless of how many subtitle tracks are being exported.
+
+## Features
+
+- Extract subtitle tracks from MKV files using MKVToolNix
+- Support for SRT, ASS, and SUP (PGS) subtitle formats
+- Language filtering using ISO 639-1 (2-letter) or ISO 639-2 (3-letter) codes
+- Track number selection for precise control
+- Mixed selection combining language codes and track numbers
+- Automatic file naming based on track properties (language, number, name, forced status)
+- Interactive mode via drag-and-drop
+- Command-line interface for scripting and automation
+
+## Requirements
+
+- Go 1.16 or later
+- `mkvmerge` and `mkvextract` tools from the MKVToolNix package
+- `gocmd` library
+
+## Installation
+
+1. Install Go from [golang.org](https://golang.org/dl/).
+2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/).
+  - Add to PATH system environment variables
+3. Clone the repository and navigate to the project directory:
+    ```sh
+    git clone https://github.com/matthane/subscalpelmkv.git
+    cd subscalpelmkv
+    ```
+4. Build the project:
+    ```sh
+    go build -o subscalpelmkv
+    ```
+
+## Usage
+
+### Drag-and-Drop Mode
+
+Drag an MKV file onto the executable for interactive mode:
+
+1. The tool analyzes the file and displays available subtitle tracks
+2. Choose to extract all tracks or make a custom selection
+3. For custom selection, enter:
+   - Language codes: `eng`, `spa`, `fre`
+   - Track numbers: `3`, `5`, `7`
+   - Mixed selection: `eng,3,spa,7`
+
+### Command Line Mode
+
+#### Basic Usage
+```sh
+# Extract all subtitle tracks
+./subscalpelmkv -x video.mkv
+```
+
+#### Language Filtering
+```sh
+# Single language
+./subscalpelmkv -x video.mkv -l eng
+
+# Multiple languages
+./subscalpelmkv -x video.mkv -l eng,spa,fre
+```
+
+#### Track Selection
+```sh
+# Specific track numbers
+./subscalpelmkv -x video.mkv -t 3,5,7
+
+# Mixed language and track selection
+./subscalpelmkv -x video.mkv -s eng,3,spa,7
+```
+
+#### Command Line Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--extract` | `-x` | Path to MKV file (required) |
+| `--language` | `-l` | Language codes (comma-separated) |
+| `--tracks` | `-t` | Track numbers (comma-separated) |
+| `--selection` | `-s` | Mixed language codes and track numbers |
+| `--help` | `-h` | Show help message |
+
+#### Supported Language Codes
+- **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`
+- **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`
+
+## Examples
+
+### Drag and Drop Examples
+
+- **Interactive mode**: Simply drag `example.mkv` onto `subscalpelmkv.exe`
+
+### Command Line Examples
+
+```sh
+# Extract all subtitle tracks
+./subscalpelmkv -x example.mkv
+
+# Extract only English subtitle tracks (2-letter code)
+./subscalpelmkv -x example.mkv -l en
+
+# Extract only English subtitle tracks (3-letter code)
+./subscalpelmkv -x example.mkv -l eng
+
+# Extract only Spanish subtitle tracks
+./subscalpelmkv -x example.mkv -l es
+
+# Extract only French subtitle tracks
+./subscalpelmkv -x example.mkv -l fr
+```
+
+The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using language filtering, only tracks matching the specified language code will be extracted.
+
+### Output File Naming
+
+Output files are named using the pattern:
+```
+<original_filename>.<language>.<track_number>[.<track_name>][.forced].<extension>
+```
+
+Examples:
+- `movie.en.001.srt` - English SRT subtitle, track 1
+- `movie.es.002.Spanish.ass` - Spanish ASS subtitle, track 2, with track name
+- `movie.en.003.forced.srt` - English forced SRT subtitle, track 3
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE.md` file for details.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+
+## Acknowledgements
+
+- [GMMK MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract)
+- [MKVToolNix](https://mkvtoolnix.download/)
+- [gocmd](https://github.com/devfacet/gocmd)
