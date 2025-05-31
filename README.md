@@ -73,6 +73,12 @@ Drag an MKV file onto the executable for interactive mode:
 ./subscalpelmkv -x video.mkv -s eng,3,spa,7
 ```
 
+#### Info Flag Usage
+```sh
+# Show detailed information about subtitle tracks
+./subscalpelmkv -i video.mkv
+```
+
 #### Command Line Options
 
 | Option | Short | Description |
@@ -81,11 +87,12 @@ Drag an MKV file onto the executable for interactive mode:
 | `--language` | `-l` | Language codes (comma-separated) |
 | `--tracks` | `-t` | Track numbers (comma-separated) |
 | `--selection` | `-s` | Mixed language codes and track numbers |
+| `--info` |  | Show detailed information about subtitle tracks |
 | `--help` | `-h` | Show help message |
 
 #### Supported Language Codes
-- **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`
-- **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`
+- **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
+- **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
 
 ## Examples
 
@@ -110,6 +117,9 @@ Drag an MKV file onto the executable for interactive mode:
 
 # Extract only French subtitle tracks
 ./subscalpelmkv -x example.mkv -l fr
+```
+# Show detailed information about subtitle tracks
+./subscalpelmkv --info example.mkv
 ```
 
 The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using language filtering, only tracks matching the specified language code will be extracted.
