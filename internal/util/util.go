@@ -82,6 +82,11 @@ func ShowProgressBar(percentage int) {
 	progress.ShowProgressBar(percentage)
 }
 
+// ResetProgressBar resets the progress bar for a new operation
+func ResetProgressBar() {
+	progress.ResetProgressBar()
+}
+
 // ParseProgressLine extracts percentage from mkvmerge progress output
 func ParseProgressLine(line string) (int, bool) {
 	return progress.ParseProgressLine(line)
