@@ -5,12 +5,16 @@
 ## Features
 
 - Extract subtitle tracks from MKV files using MKVToolNix
-- Support for SRT, ASS, and SUP (PGS) subtitle formats
+- Support for multiple subtitle formats:
+  - **Text-based**: SRT, ASS, SSA, WebVTT, USF, TXT
+  - **Image-based**: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
+  - **Other**: KATE, HDMV/TEXTST
 - Track export selection using language codes, track numbers, or any combination of both
 - Flexible output control: custom directories, filename templates, and auto-directory creation
 - Automatic file naming based on track properties (language, number, name, forced status)
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
+- Special handling for VOBSUB format (automatically creates both .idx and .sub files)
 
 ## Requirements
 
@@ -139,7 +143,8 @@ Examples:
 - `movie.eng.001.srt` - English SRT subtitle, track 1
 - `movie.spa.002.ass` - Spanish ASS subtitle, track 2
 - `movie.eng.003.forced.sup` - English forced SUP subtitle, track 3
-- `movie.fre.004.default.sup` - French default SUP subtitle, track 4
+- `movie.fre.004.default.vtt` - French default WebVTT subtitle, track 4
+- `movie.ger.005.sub` - German VOBSUB subtitle, track 5 (creates .idx and .sub files)
 
 #### Custom Filename Templates
 You can customize the output filename format using the `-f` flag with placeholders:
@@ -151,7 +156,7 @@ You can customize the output filename format using the `-f` flag with placeholde
 - `{trackname}` - Track name (if available)
 - `{forced}` - "forced" if track is forced, empty otherwise
 - `{default}` - "default" if track is default, empty otherwise
-- `{extension}` - Subtitle file extension (srt, ass, sup)
+- `{extension}` - Subtitle file extension (srt, ass, ssa, vtt, usf, sup, sub, bmp, kate, txt)
 
 **Template Examples:**
 ```sh
