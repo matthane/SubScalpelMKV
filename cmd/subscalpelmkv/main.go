@@ -123,8 +123,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 }
 
 func main() {
-	fmt.Println("🗡️ SubScalpelMKV")
-	fmt.Println("=================")
+	fmt.Println("🎞️🗡️ SubScalpelMKV")
+	fmt.Println("===================")
 
 	// Parse command-line arguments using gocmd
 	args := os.Args[1:]
@@ -184,7 +184,7 @@ func main() {
 	// Initialize gocmd
 	_, cmdErr := gocmd.New(gocmd.Options{
 		Name:        "subscalpelmkv",
-		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files quickly and precisely like a scalpel blade. Supports drag-and-drop: simply drag an MKV file onto the executable.",
+		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files quickly and precisely. Supports drag-and-drop: simply drag an MKV file onto the executable.",
 		Version:     "1.0.0",
 		Flags:       &flags,
 		ConfigType:  gocmd.ConfigTypeAuto,
