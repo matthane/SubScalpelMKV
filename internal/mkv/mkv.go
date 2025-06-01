@@ -49,7 +49,19 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 		fmt.Println(string(output))
 		return cmdErr
 	}
-	fmt.Printf("  ✓ Extracted track %d (%s) -> %s\n", originalTrackNumber, track.Properties.Language, outFileName)
+
+	// Handle special case for S_VOBSUB which creates both .idx and .sub files
+	if track.Properties.CodecId == "S_VOBSUB" {
+		// For VOBSUB, mkvextract creates both .idx and .sub files automatically
+		// The output filename should have .sub extension, and .idx will be created alongside it
+		baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+		idxFileName := baseFileName + ".idx"
+		subFileName := baseFileName + ".sub"
+		fmt.Printf("  ✓ Extracted track %d (%s) -> %s + %s\n", originalTrackNumber, track.Properties.Language,
+			filepath.Base(idxFileName), filepath.Base(subFileName))
+	} else {
+		fmt.Printf("  ✓ Extracted track %d (%s) -> %s\n", originalTrackNumber, track.Properties.Language, outFileName)
+	}
 	return nil
 }
 

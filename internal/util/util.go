@@ -69,6 +69,12 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 		subtitleExt = "srt" // fallback
 	}
 
+	// Special handling for S_VOBSUB: ensure we use .sub extension
+	// (mkvextract will create both .idx and .sub files automatically)
+	if track.Properties.CodecId == "S_VOBSUB" {
+		subtitleExt = "sub"
+	}
+
 	// Format track number with leading zeros
 	trackNo := fmt.Sprintf("%03d", track.Properties.Number)
 

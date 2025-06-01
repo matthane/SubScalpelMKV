@@ -157,7 +157,23 @@ const DefaultOutputTemplate = "{basename}.{language}.{trackno}.{trackname}.{forc
 
 // SubtitleExtensionByCodec maps codec IDs to file extensions
 var SubtitleExtensionByCodec = map[string]string{
-	"S_TEXT/UTF8": "srt",
-	"S_TEXT/ASS":  "ass",
+	// Text-based subtitle formats
+	"S_TEXT/UTF8":   "srt",
+	"S_TEXT/ASS":    "ass",
+	"S_TEXT/SSA":    "ssa",
+	"S_TEXT/WEBVTT": "vtt",
+	"S_TEXT/USF":    "usf",
+	"S_ASS":         "ass",
+	"S_SSA":         "ssa",
+
+	// Image-based subtitle formats
 	"S_HDMV/PGS":  "sup",
+	"S_VOBSUB":    "sub",
+	"S_DVBSUB":    "sub",
+	"S_IMAGE/BMP": "bmp",
+
+	// Legacy and other formats
+	"S_KATE":        "kate",
+	"S_TEXT/PLAIN":  "txt",
+	"S_HDMV/TEXTST": "sup",
 }
