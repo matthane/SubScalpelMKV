@@ -1,4 +1,4 @@
-# 🗡️ SubScalpelMKV
+# 🎞️🗡️ SubScalpelMKV
 
 `subscalpelmkv` is a cross-platform command-line tool written in Go for extracting subtitles from MKV files quickly and precisely. It is a fork/overhaul of [GMM MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract) with many new features for increased speed and capability.
 
@@ -55,8 +55,8 @@ Drag an MKV file onto the executable for interactive mode:
 2. Choose to extract all tracks or make a custom selection
 
 3. For custom selection, enter:
-    - Language codes: `eng`, `spa`, `fre`
-    - Track numbers: `3`, `5`, `7`
+    - Language codes: `eng,spa,fre`
+    - Track numbers: `3,5,7`
     - Mixed selection: `eng,3,spa,7`
 
 ### Command Line Mode
