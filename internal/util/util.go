@@ -127,20 +127,27 @@ func cleanupFileName(filename string) string {
 // MatchesTrackSelection checks if a track matches the user's selection criteria
 func MatchesTrackSelection(track model.MKVTrack, selection model.TrackSelection) bool {
 	// If no selection criteria, match all
-	if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 {
+	if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 && len(selection.FormatFilters) == 0 {
 		return true
 	}
 
-	// Check if track number matches (prioritize over language codes)
+	// Check if track number matches (prioritize over other criteria)
 	for _, trackNum := range selection.TrackNumbers {
 		if track.Properties.Number == trackNum {
 			return true
 		}
 	}
 
-	// Check if language matches
+	// Check if language matches (additive OR logic)
 	for _, langCode := range selection.LanguageCodes {
 		if model.MatchesLanguageFilter(track.Properties.Language, langCode) {
+			return true
+		}
+	}
+
+	// Check if format matches (additive OR logic)
+	for _, formatFilter := range selection.FormatFilters {
+		if model.MatchesFormatFilter(track.Properties.CodecId, formatFilter) {
 			return true
 		}
 	}

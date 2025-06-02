@@ -27,12 +27,19 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	if languageFilter != "" {
 		selection = cli.ParseTrackSelection(languageFilter)
 		if showFilterMessage {
-			if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
-				format.PrintFilter("Track filter", fmt.Sprintf("languages %v and track IDs %v", selection.LanguageCodes, selection.TrackNumbers))
-			} else if len(selection.LanguageCodes) > 0 {
-				format.PrintFilter("Language filter", selection.LanguageCodes)
-			} else {
-				format.PrintFilter("Track ID filter", selection.TrackNumbers)
+			var filterParts []string
+			if len(selection.LanguageCodes) > 0 {
+				filterParts = append(filterParts, fmt.Sprintf("languages %v", selection.LanguageCodes))
+			}
+			if len(selection.TrackNumbers) > 0 {
+				filterParts = append(filterParts, fmt.Sprintf("track IDs %v", selection.TrackNumbers))
+			}
+			if len(selection.FormatFilters) > 0 {
+				filterParts = append(filterParts, fmt.Sprintf("formats %v", selection.FormatFilters))
+			}
+
+			if len(filterParts) > 0 {
+				format.PrintFilter("Track filter", strings.Join(filterParts, ", "))
 			}
 		}
 	} else if showFilterMessage {

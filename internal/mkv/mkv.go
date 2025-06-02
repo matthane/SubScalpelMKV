@@ -130,7 +130,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	}
 
 	// Add subtitle track selection - only include matching tracks
-	if len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 {
+	if len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 || len(selection.FormatFilters) > 0 {
 		subtitleTracks := strings.Join(selectedTrackIDs, ",")
 		args = append(args, "--subtitle-tracks", subtitleTracks)
 

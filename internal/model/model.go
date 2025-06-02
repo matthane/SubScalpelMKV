@@ -143,6 +143,7 @@ type MKVInfo struct {
 type TrackSelection struct {
 	LanguageCodes []string
 	TrackNumbers  []int
+	FormatFilters []string // Subtitle format filters (e.g., "srt", "ass", "sup")
 }
 
 // OutputConfig represents output configuration options
@@ -176,4 +177,22 @@ var SubtitleExtensionByCodec = map[string]string{
 	"S_KATE":        "kate",
 	"S_TEXT/PLAIN":  "txt",
 	"S_HDMV/TEXTST": "sup",
+}
+
+// GetSubtitleFormatFromCodec returns the subtitle format (extension) for a given codec
+func GetSubtitleFormatFromCodec(codecId string) string {
+	if ext, exists := SubtitleExtensionByCodec[codecId]; exists {
+		return ext
+	}
+	return "srt" // fallback
+}
+
+// MatchesFormatFilter checks if a track format matches the specified filter
+func MatchesFormatFilter(codecId, formatFilter string) bool {
+	if formatFilter == "" {
+		return true // No filter specified, match all
+	}
+
+	trackFormat := GetSubtitleFormatFromCodec(codecId)
+	return strings.EqualFold(trackFormat, formatFilter)
 }

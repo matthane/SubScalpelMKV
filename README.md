@@ -55,7 +55,8 @@ Drag an MKV file onto the executable for interactive mode:
 3. For custom selection, enter:
     - Language codes: `eng,spa,fre`
     - Track numbers: `3,5,7`
-    - Mixed selection: `eng,3,spa,7`
+    - Subtitle formats: `srt,ass,sup`
+    - Mixed selection: `eng,3,srt,sup`
 
 ### Command Line Mode
 
@@ -65,7 +66,7 @@ Drag an MKV file onto the executable for interactive mode:
 ./subscalpelmkv -x "path/to/video.mkv"
 ```
 
-#### Subtitle Track Selection
+#### Subtitle Track Selection (**ADDITIVE FILTERING**)
 ```sh
 # Single language
 ./subscalpelmkv -x "path/to/video.mkv" -s eng
@@ -76,8 +77,14 @@ Drag an MKV file onto the executable for interactive mode:
 # Specific track numbers
 ./subscalpelmkv -x "path/to/video.mkv" -s 1,3,5
 
-# Mixed language codes and track numbers
-./subscalpelmkv -x "path/to/video.mkv" -s eng,3,spa,7
+# Subtitle format filtering
+./subscalpelmkv -x "path/to/video.mkv" -s srt,ass
+
+# Extract only image-based subtitles
+./subscalpelmkv -x "path/to/video.mkv" -s sup
+
+# Mixed selection: languages, track numbers, and formats
+./subscalpelmkv -x "path/to/video.mkv" -s eng,3,srt,sup
 ```
 
 #### Output Control
@@ -104,7 +111,7 @@ Drag an MKV file onto the executable for interactive mode:
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--extract` | `-x` | Path to MKV file (required) |
-| `--select` | `-s` | Language codes, track numbers, or any combination (comma-separated) |
+| `--select` | `-s` | Language codes, track numbers, subtitle formats, or any combination (comma-separated) |
 | `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
 
@@ -118,7 +125,7 @@ Drag an MKV file onto the executable for interactive mode:
 - **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
 - **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
 
-The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using track selection, only tracks matching the specified language codes or track numbers will be extracted.
+The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using track selection, only tracks matching the specified language codes, track numbers, or subtitle formats will be extracted.
 
 ### Output File Naming
 
