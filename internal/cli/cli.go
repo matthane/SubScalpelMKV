@@ -154,14 +154,12 @@ func ShowHelp() {
 	fmt.Println("Selection Options:")
 	fmt.Println("  -x, --extract <file>       Extract subtitles from MKV file")
 	fmt.Println("  -i, --info <file>          Display subtitle track information")
-	fmt.Println("  -l, --language <codes>     Language codes to filter subtitle tracks")
-	fmt.Println("                             (e.g., 'eng', 'spa,fre'). Use comma-separated")
-	fmt.Println("                             values for multiple languages")
-	fmt.Println("  -t, --tracks <numbers>     Specific track numbers to extract")
-	fmt.Println("                             (e.g., '3', '3,5,7'). Use comma-separated")
-	fmt.Println("                             values for multiple tracks")
-	fmt.Println("  -s, --selection <mixed>    Mixed selection of language codes and track")
-	fmt.Println("                             numbers (e.g., 'eng,3,spa,7')")
+	fmt.Println("  -s, --select <selection>   Select subtitle tracks by language codes and/or")
+	fmt.Println("                             track numbers. Use comma-separated values.")
+	fmt.Println("                             Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
+	fmt.Println("                             Track numbers: specific track IDs (3,5,7)")
+	fmt.Println("                             Mixed: combine both (e.g., 'eng,3,spa,7')")
+	fmt.Println("                             If not specified, all subtitle tracks will be extracted")
 	fmt.Println()
 	fmt.Println("Output Options:")
 	fmt.Println("  -o, --output-dir <dir>     Output directory for extracted subtitle files")
@@ -175,9 +173,9 @@ func ShowHelp() {
 	fmt.Println("Examples:")
 	fmt.Println("  subscalpelmkv -i video.mkv")
 	fmt.Println("  subscalpelmkv -x video.mkv")
-	fmt.Println("  subscalpelmkv -x video.mkv -l eng")
-	fmt.Println("  subscalpelmkv -x video.mkv -l eng,spa")
-	fmt.Println("  subscalpelmkv -x video.mkv -t 3,5")
+	fmt.Println("  subscalpelmkv -x video.mkv -s eng")
+	fmt.Println("  subscalpelmkv -x video.mkv -s eng,spa")
+	fmt.Println("  subscalpelmkv -x video.mkv -s 3,5")
 	fmt.Println("  subscalpelmkv -x video.mkv -s eng,3,spa,7")
 	fmt.Println("  subscalpelmkv -x video.mkv -o ./subtitles")
 	fmt.Println("  subscalpelmkv -x video.mkv -o ./subtitles -c")
@@ -335,20 +333,8 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 }
 
 // BuildSelectionFilter builds a selection filter from command line arguments
-func BuildSelectionFilter(language, tracks, selection string) string {
-	// Priority: selection > tracks > language
-	if selection != "" {
-		return selection
-	} else if tracks != "" {
-		if language != "" {
-			// Combine tracks and language
-			return language + "," + tracks
-		} else {
-			return tracks
-		}
-	} else {
-		return language
-	}
+func BuildSelectionFilter(input string) string {
+	return input
 }
 
 // ShowFileInfo displays subtitle track information for a file without extracting

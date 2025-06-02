@@ -9,9 +9,8 @@
   - **Text-based**: SRT, ASS, SSA, WebVTT, USF, TXT
   - **Image-based**: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
   - **Other**: KATE, HDMV/TEXTST
-- Track export selection using language codes, track numbers, or any combination of both
+- Flexible track selection using language codes, track numbers, or any combination of both
 - Flexible output control: custom directories, filename templates, and auto-directory creation
-- Automatic file naming based on track properties (language, number, name, forced status)
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
 - Special handling for VOBSUB format (automatically creates both .idx and .sub files)
@@ -67,21 +66,18 @@ Drag an MKV file onto the executable for interactive mode:
 ./subscalpelmkv -x "path/to/video.mkv"
 ```
 
-#### Language Filtering
+#### Subtitle Track Selection
 ```sh
 # Single language
-./subscalpelmkv -x "path/to/video.mkv" -l eng
+./subscalpelmkv -x "path/to/video.mkv" -s eng
 
 # Multiple languages
-./subscalpelmkv -x "path/to/video.mkv" -l eng,spa,fre
-```
+./subscalpelmkv -x "path/to/video.mkv" -s eng,spa,fre
 
-#### Track Selection
-```sh
 # Specific track numbers
-./subscalpelmkv -x "path/to/video.mkv" -t 3,5,7
+./subscalpelmkv -x "path/to/video.mkv" -s 1,3,5
 
-# Mixed language and track selection
+# Mixed language codes and track numbers
 ./subscalpelmkv -x "path/to/video.mkv" -s eng,3,spa,7
 ```
 
@@ -96,8 +92,8 @@ Drag an MKV file onto the executable for interactive mode:
 # Custom filename template
 ./subscalpelmkv -x "path/to/video.mkv" -f "{basename}-{language}.{extension}"
 
-# Combined: custom directory, template, and language filter
-./subscalpelmkv -x "path/to/video.mkv" -l eng,spa -o ./subs -f "{language}-{trackno}.{extension}" -c
+# Combined: custom directory, template, and track selection
+./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -o ./subs -f "{language}-{trackno}.{extension}" -c
 ```
 
 #### Info Flag Usage
@@ -112,9 +108,7 @@ Drag an MKV file onto the executable for interactive mode:
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--extract` | `-x` | Path to MKV file (required) |
-| `--language` | `-l` | Language codes (comma-separated) |
-| `--tracks` | `-t` | Track numbers (comma-separated) |
-| `--selection` | `-s` | Mixed language codes and track numbers |
+| `--select` | `-s` | Language codes, track numbers, or any combination (comma-separated) |
 | `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
 
@@ -129,7 +123,7 @@ Drag an MKV file onto the executable for interactive mode:
 - **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
 - **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
 
-The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using language filtering, only tracks matching the specified language code will be extracted.
+The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using track selection, only tracks matching the specified language codes or track numbers will be extracted.
 
 ### Output File Naming
 

@@ -173,9 +173,7 @@ func main() {
 	flags := struct {
 		Extract        string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
 		Info           string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
-		Language       string `short:"l" long:"language" description:"Language codes to filter subtitle tracks (e.g., 'eng', 'spa', 'fre'). Use comma-separated values for multiple languages. If not specified, all subtitle tracks will be extracted"`
-		Tracks         string `short:"t" long:"tracks" description:"Specific track numbers to extract (e.g., '3,5,7'). Use comma-separated values for multiple tracks"`
-		Selection      string `short:"s" long:"selection" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7'). Combines language and track filtering"`
+		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7')"`
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
 		CreateDir      bool   `short:"c" long:"create-dir" description:"Create output directory if it doesn't exist"`
@@ -204,7 +202,7 @@ func main() {
 	if flags.Extract != "" {
 		// Handle extract flag
 		inputFileName := flags.Extract
-		selectionFilter := cli.BuildSelectionFilter(flags.Language, flags.Tracks, flags.Selection)
+		selectionFilter := cli.BuildSelectionFilter(flags.Select)
 
 		// Build output configuration
 		outputConfig := model.OutputConfig{
