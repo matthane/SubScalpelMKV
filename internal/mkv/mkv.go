@@ -80,13 +80,11 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	var dir string
 	if outputConfig.OutputDir != "" {
 		dir = outputConfig.OutputDir
-		// Create output directory if requested and it doesn't exist
-		if outputConfig.CreateDir {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				fmt.Printf("Warning: Could not create output directory %s: %v\n", dir, err)
-				// Fall back to input file directory
-				dir = filepath.Dir(inputFileName)
-			}
+		// Always create output directory if it doesn't exist
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			fmt.Printf("Warning: Could not create output directory %s: %v\n", dir, err)
+			// Fall back to input file directory
+			dir = filepath.Dir(inputFileName)
 		}
 	} else {
 		dir = filepath.Dir(inputFileName)

@@ -176,7 +176,6 @@ func main() {
 		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7')"`
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
-		CreateDir      bool   `short:"c" long:"create-dir" description:"Create output directory if it doesn't exist"`
 	}{}
 
 	// Initialize gocmd
@@ -208,7 +207,7 @@ func main() {
 		outputConfig := model.OutputConfig{
 			OutputDir: flags.OutputDir,
 			Template:  flags.OutputTemplate,
-			CreateDir: flags.CreateDir,
+			CreateDir: true, // Always create directory if it doesn't exist
 		}
 
 		// Use default template if none specified

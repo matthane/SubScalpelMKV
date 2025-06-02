@@ -37,8 +37,8 @@ func BuildSubtitlesFileNameWithConfig(inputFileName string, track model.MKVTrack
 		outputDir = filepath.Dir(inputFileName)
 	}
 
-	// Create output directory if requested and it doesn't exist
-	if config.CreateDir && config.OutputDir != "" {
+	// Always create output directory if it doesn't exist and a custom output directory is specified
+	if config.OutputDir != "" {
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			fmt.Printf("Warning: Could not create output directory %s: %v\n", outputDir, err)
 			// Fall back to input file directory

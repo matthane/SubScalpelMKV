@@ -10,10 +10,9 @@
   - **Image-based**: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
   - **Other**: KATE, HDMV/TEXTST
 - Flexible track selection using language codes, track numbers, or any combination of both
-- Flexible output control: custom directories, filename templates, and auto-directory creation
+- Output control: custom directories and filename templates
 - Interactive mode via drag-and-drop
 - Command-line interface for scripting and automation
-- Special handling for VOBSUB format (automatically creates both .idx and .sub files)
 
 ## Requirements
 
@@ -83,17 +82,14 @@ Drag an MKV file onto the executable for interactive mode:
 
 #### Output Control
 ```sh
-# Custom output directory
+# Custom output directory (automatically created if it doesn't exist)
 ./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles
-
-# Custom output directory with auto-creation if it doesn't exist
-./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles -c
 
 # Custom filename template
 ./subscalpelmkv -x "path/to/video.mkv" -f "{basename}-{language}.{extension}"
 
 # Combined: custom directory, template, and track selection
-./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -o ./subs -f "{language}-{trackno}.{extension}" -c
+./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -o ./subs -f "{language}-{trackno}.{extension}"
 ```
 
 #### Info Flag Usage
@@ -115,9 +111,8 @@ Drag an MKV file onto the executable for interactive mode:
 ##### Output Options
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--output-dir` | `-o` | Custom output directory (default: same as input file) |
+| `--output-dir` | `-o` | Custom output directory (automatically created if it doesn't exist, default: same as input file) |
 | `--format` | `-f` | Custom filename template with placeholders |
-| `--create-dir` | `-c` | Create output directory if it doesn't exist |
 
 #### Supported Language Codes
 - **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
@@ -169,19 +164,15 @@ You can customize the output filename format using the `-f` flag with placeholde
 
 #### Output Directory Control
 - **Default**: Files are saved in the same directory as the input MKV file
-- **Custom Directory**: Use `-o` to specify a different output directory
-- **Auto-Create**: Use `-c` with `-o` to automatically create the output directory if it doesn't exist
+- **Custom Directory**: Use `-o` to specify a different output directory (automatically created if it doesn't exist)
 
 **Directory Examples:**
 ```sh
-# Save to specific directory
-./subscalpelmkv -x movie.mkv -o ./extracted-subtitles
-
-# Create directory if it doesn't exist
-./subscalpelmkv -x movie.mkv -o ./new-folder -c
+# Save to generic directory
+./subscalpelmkv -x path/to/video.mkv -o ./extracted-subtitles
 
 # Organize by movie name
-./subscalpelmkv -x movie.mkv -o "./subtitles/movie-name" -c
+./subscalpelmkv -x path/to/video.mkv -o "./subtitles/Movie Name"
 ```
 ## License
 
