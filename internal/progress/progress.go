@@ -27,7 +27,6 @@ type ProgressTheme struct {
 	BarEnd        string
 }
 
-// Default theme with colors
 var defaultTheme = ProgressTheme{
 	Saucer:        "█",
 	SaucerHead:    "█",
@@ -48,7 +47,6 @@ func ShowProgressBar(percentage int) {
 	renderProgressBar(percentage)
 	lastPercent = percentage
 
-	// If we've reached 100%, show completion message
 	if percentage >= 100 {
 		elapsed := time.Since(startTime)
 		fmt.Printf("\n")
@@ -77,27 +75,21 @@ func formatDuration(d time.Duration) string {
 
 // renderProgressBar renders the progress bar to stdout
 func renderProgressBar(percentage int) {
-	// Calculate filled and empty portions
 	filledWidth := int(float64(barWidth) * float64(percentage) / 100.0)
 	emptyWidth := barWidth - filledWidth
 
-	// Build the progress bar string
 	var bar strings.Builder
 
-	// Start character
 	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarStart))
 
-	// Filled portion
 	for i := 0; i < filledWidth; i++ {
 		bar.WriteString(format.ProgressFillColor.Sprint(defaultTheme.Saucer))
 	}
 
-	// Empty portion
 	for i := 0; i < emptyWidth; i++ {
 		bar.WriteString(format.ProgressEmptyColor.Sprint(defaultTheme.SaucerPadding))
 	}
 
-	// End character
 	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarEnd))
 
 	// Print the progress bar with percentage

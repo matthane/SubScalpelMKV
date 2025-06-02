@@ -79,16 +79,13 @@ func ExtractMultipleSubtitles(inputFileName string, tracks []TrackExtractionInfo
 		return nil
 	}
 
-	// Build the mkvextract command with multiple track:output pairs
 	args := []string{inputFileName, "tracks"}
 
-	// Add each track ID and output filename pair
 	for _, trackInfo := range tracks {
 		trackPair := fmt.Sprintf("%d:%s", trackInfo.Track.Id, trackInfo.OutFileName)
 		args = append(args, trackPair)
 	}
 
-	// Execute the command
 	cmd := exec.Command("mkvextract", args...)
 	output, cmdErr := cmd.Output()
 	if cmdErr != nil {
@@ -97,7 +94,6 @@ func ExtractMultipleSubtitles(inputFileName string, tracks []TrackExtractionInfo
 		return cmdErr
 	}
 
-	// Print success messages for each extracted track
 	for _, trackInfo := range tracks {
 		track := trackInfo.Track
 		originalTrack := trackInfo.OriginalTrack
@@ -159,14 +155,12 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	var selectedTrackIDs []string
 	for _, track := range originalMkvInfo.Tracks {
 		if track.Type == "subtitles" {
-			// Check if track matches the selection criteria
 			if matchesTrackSelection(track, selection) {
 				selectedTrackIDs = append(selectedTrackIDs, strconv.Itoa(track.Id))
 			}
 		}
 	}
 
-	// If no tracks match the filter, return an error
 	if len(selectedTrackIDs) == 0 {
 		return "", fmt.Errorf("no subtitle tracks match the specified selection criteria")
 	}
@@ -209,7 +203,6 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		return "", fmt.Errorf("failed to create stdout pipe: %v", err)
 	}
 
-	// Start the command
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("failed to start mkvmerge: %v", err)
 	}
@@ -226,14 +219,11 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Check if this line contains progress information
 		if percentage, isProgress := util.ParseProgressLine(line); isProgress {
-			// Show progress bar for all progress updates
 			util.ShowProgressBar(percentage)
 		}
 	}
 
-	// Wait for the command to complete
 	cmdErr := cmd.Wait()
 
 	// Show cursor again
@@ -246,7 +236,6 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		return "", cmdErr
 	}
 
-	// Add spacing after Step 1 completion
 	fmt.Println()
 	return mksFileName, nil
 }

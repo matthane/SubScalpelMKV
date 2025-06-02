@@ -109,7 +109,6 @@ func MatchesLanguageFilter(trackLanguage, filterLanguage string) bool {
 		return true // No filter specified, match all
 	}
 
-	// Direct match
 	if strings.EqualFold(trackLanguage, filterLanguage) {
 		return true
 	}

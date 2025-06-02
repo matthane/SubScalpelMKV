@@ -29,7 +29,6 @@ func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
 
 // BuildSubtitlesFileNameWithConfig builds the output filename using custom configuration
 func BuildSubtitlesFileNameWithConfig(inputFileName string, track model.MKVTrack, config model.OutputConfig) string {
-	// Determine output directory
 	var outputDir string
 	if config.OutputDir != "" {
 		outputDir = config.OutputDir
@@ -46,7 +45,6 @@ func BuildSubtitlesFileNameWithConfig(inputFileName string, track model.MKVTrack
 		}
 	}
 
-	// Build filename using template
 	fileName := BuildFileNameFromTemplate(inputFileName, track, config.Template)
 
 	return filepath.Join(outputDir, fileName)
@@ -58,12 +56,10 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 		template = model.DefaultOutputTemplate
 	}
 
-	// Extract components from input filename
 	fileName := filepath.Base(inputFileName)
 	extension := filepath.Ext(fileName)
 	baseName := strings.TrimSuffix(fileName, extension)
 
-	// Get subtitle extension
 	subtitleExt := model.SubtitleExtensionByCodec[track.Properties.CodecId]
 	if subtitleExt == "" {
 		subtitleExt = "srt" // fallback
@@ -78,7 +74,6 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 	// Format track number with leading zeros
 	trackNo := fmt.Sprintf("%03d", track.Properties.Number)
 
-	// Build replacement map
 	replacements := map[string]string{
 		"{basename}":  baseName,
 		"{language}":  track.Properties.Language,
@@ -89,7 +84,6 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 		"{extension}": subtitleExt,
 	}
 
-	// Handle conditional flags
 	if track.Properties.Forced {
 		replacements["{forced}"] = "forced"
 	}
@@ -97,7 +91,6 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 		replacements["{default}"] = "default"
 	}
 
-	// Apply replacements
 	result := template
 	for placeholder, value := range replacements {
 		result = strings.ReplaceAll(result, placeholder, value)
@@ -111,7 +104,6 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 
 // cleanupFileName removes empty segments and cleans up the filename
 func cleanupFileName(filename string) string {
-	// Split by dots and remove empty segments
 	parts := strings.Split(filename, ".")
 	var cleanParts []string
 

@@ -119,7 +119,7 @@ func PrintStep(step int, message string) {
 	BrandColor.Printf("%s\n", message)
 }
 
-// PrintTrackInfo prints formatted track information with enhanced colors
+// PrintTrackInfo prints formatted track information
 func PrintTrackInfo(trackNum int, language, trackName, codecType string, forced, defaultTrack bool) {
 	PrintTrackInfoWithType(trackNum, "", language, trackName, codecType, forced, defaultTrack)
 }
@@ -143,7 +143,6 @@ func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecT
 		trackColor = TrackNumberColor
 	}
 
-	// Track ID and language information
 	trackInfo := fmt.Sprintf("Track ID %s: %s",
 		trackColor.Sprint(trackNum),
 		LanguageColor.Sprint(language))
@@ -153,7 +152,6 @@ func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecT
 	}
 	parts = append(parts, trackInfo)
 
-	// Track name if available
 	if trackName != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", AccentColor.Sprint(trackName)))
 	}

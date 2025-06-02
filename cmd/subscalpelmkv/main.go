@@ -22,7 +22,6 @@ const (
 
 // processFile handles the actual subtitle extraction logic
 func processFile(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
-	// Parse track selection using cli package
 	var selection model.TrackSelection
 	if languageFilter != "" {
 		selection = cli.ParseTrackSelection(languageFilter)
@@ -46,7 +45,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		format.PrintInfo("No filter - muxing and extracting all subtitle tracks")
 	}
 
-	// Validate input file using util package
 	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
 		format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 		return statErr
@@ -74,12 +72,12 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		}
 	}
 
-	// Step 1: Create .mks file with only selected subtitle tracks using mkv package
+	// Step 1: Create .mks file with only selected subtitle tracks
 	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection, outputConfig)
 	if mksErr != nil {
 		return mksErr
 	}
-	// Ensure cleanup of temporary .mks file using mkv package
+	// Ensure cleanup of temporary .mks file
 	defer mkv.CleanupTempFile(mksFileName)
 
 	// Step 2: Get track information from the temporary .mks file
@@ -91,10 +89,9 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	}
 	fmt.Println()
 
-	// Step 3: Extract subtitles using parallel processing
+	// Step 3: Extract subtitles
 	format.PrintStep(3, "Extracting subtitle tracks...")
 
-	// Prepare extraction jobs for processing
 	var jobs []model.ExtractionJob
 	mksTrackIndex := 0
 
@@ -111,10 +108,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 			}
 			mksTrackIndex++
 
-			// Build output filename using the original track information and output config
 			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, originalTrack, outputConfig)
 
-			// Create extraction job
 			jobs = append(jobs, model.ExtractionJob{
 				Track:         track,
 				OriginalTrack: originalTrack,
@@ -136,7 +131,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 func main() {
 	format.PrintTitle()
 
-	// Parse command-line arguments using gocmd
 	args := os.Args[1:]
 
 	// Check for help flags first
@@ -149,10 +143,8 @@ func main() {
 
 	// Detect execution mode: drag-and-drop vs CLI
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		// Drag-and-drop mode
 		inputFileName := strings.Join(args, " ")
 
-		// Validate file exists and is MKV
 		if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
 			format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
@@ -166,7 +158,6 @@ func main() {
 			os.Exit(ErrCodeFailure)
 		}
 
-		// Handle drag-and-drop mode using CLI package with default output config
 		defaultOutputConfig := model.OutputConfig{
 			OutputDir: "",
 			Template:  model.DefaultOutputTemplate,
@@ -179,7 +170,6 @@ func main() {
 		os.Exit(ErrCodeSuccess)
 	}
 
-	// CLI mode - set up command-line flags
 	flags := struct {
 		Extract        string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
 		Info           string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
@@ -188,7 +178,6 @@ func main() {
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
 	}{}
 
-	// Initialize gocmd
 	_, cmdErr := gocmd.New(gocmd.Options{
 		Name:        "subscalpelmkv",
 		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files quickly and precisely. Supports drag-and-drop: simply drag an MKV file onto the executable.",
@@ -202,25 +191,21 @@ func main() {
 		return
 	}
 
-	// Check which flag was provided and handle accordingly
 	if flags.Extract != "" && flags.Info != "" {
 		format.PrintError("Cannot use both --extract and --info flags simultaneously")
 		os.Exit(ErrCodeFailure)
 	}
 
 	if flags.Extract != "" {
-		// Handle extract flag
 		inputFileName := flags.Extract
 		selectionFilter := cli.BuildSelectionFilter(flags.Select)
 
-		// Build output configuration
 		outputConfig := model.OutputConfig{
 			OutputDir: flags.OutputDir,
 			Template:  flags.OutputTemplate,
 			CreateDir: true, // Always create directory if it doesn't exist
 		}
 
-		// Use default template if none specified
 		if outputConfig.Template == "" {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
@@ -230,14 +215,12 @@ func main() {
 			os.Exit(ErrCodeFailure)
 		}
 	} else if flags.Info != "" {
-		// Handle info flag
 		inputFileName := flags.Info
 		err := cli.ShowFileInfo(inputFileName)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
 	} else {
-		// No flags provided, show help
 		cli.ShowHelp()
 		os.Exit(ErrCodeFailure)
 	}

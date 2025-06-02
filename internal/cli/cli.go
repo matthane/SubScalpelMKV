@@ -76,7 +76,6 @@ func ParseLanguageCodes(input string) []string {
 			continue
 		}
 
-		// Validate the language code
 		isValid := false
 		if len(code) == 2 {
 			_, isValid = model.LanguageCodeMapping[strings.ToLower(code)]
@@ -228,7 +227,6 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 		if track.Type == "subtitles" {
 			subtitleCount++
 
-			// Show codec type
 			codecType := "Unknown"
 			if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
 				codecType = strings.ToUpper(ext)
@@ -271,7 +269,7 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig) error, outputConfig model.OutputConfig) error {
 	format.PrintInfo(fmt.Sprintf("Processing file: %s", inputFileName))
 
-	// Get track information using mkv package to show available subtitle tracks
+	// Get track information to show available subtitle tracks
 	format.PrintInfo("Analyzing file...")
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
@@ -281,10 +279,8 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		return err
 	}
 
-	// Display available subtitle tracks
 	DisplaySubtitleTracks(mkvInfo)
 
-	// Check if there are any subtitle tracks
 	hasSubtitles := false
 	for _, track := range mkvInfo.Tracks {
 		if track.Type == "subtitles" {
@@ -300,12 +296,10 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		return nil
 	}
 
-	// Ask user if they want to extract all tracks
 	extractAll := AskUserConfirmation()
 
 	var languageFilter string
 	if !extractAll {
-		// Ask for specific track selection
 		selectionInput := AskTrackSelection()
 		selection := ParseTrackSelection(selectionInput)
 
@@ -366,13 +360,11 @@ func BuildSelectionFilter(input string) string {
 
 // ShowFileInfo displays subtitle track information for a file without extracting
 func ShowFileInfo(inputFileName string) error {
-	// Validate input file using util package
 	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
 		format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 		return statErr
 	}
 
-	// Check if file is MKV using util package
 	if !util.IsMKVFile(inputFileName) {
 		format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 		return fmt.Errorf("file is not an MKV file")
@@ -380,14 +372,12 @@ func ShowFileInfo(inputFileName string) error {
 
 	format.PrintInfo(fmt.Sprintf("Analyzing file: %s", inputFileName))
 
-	// Get track information using mkv package
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error analyzing file: %v", err))
 		return err
 	}
 
-	// Display available subtitle tracks
 	DisplaySubtitleTracks(mkvInfo)
 
 	return nil
