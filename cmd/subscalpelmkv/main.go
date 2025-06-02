@@ -84,9 +84,11 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	}
 	fmt.Println()
 
-	// Step 3: Extract subtitles using mkv and util packages
+	// Step 3: Extract subtitles using parallel processing
 	format.PrintStep(3, "Extracting subtitle tracks...")
-	extractedCount := 0
+
+	// Prepare extraction jobs for parallel processing
+	var jobs []mkv.ExtractionJob
 	mksTrackIndex := 0
 
 	for _, track := range mkvInfo.Tracks {
@@ -104,21 +106,21 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 
 			// Build output filename using the original track information and output config
 			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, originalTrack, outputConfig)
-			// Extract subtitles using mkv package (use the .mks file track ID for extraction)
-			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName, originalTrack.Properties.Number)
-			if extractSubsErr != nil {
-				format.PrintError(fmt.Sprintf("Error extracting subtitles: %v", extractSubsErr))
-				return extractSubsErr
-			}
-			extractedCount++
+
+			// Create extraction job
+			jobs = append(jobs, mkv.ExtractionJob{
+				Track:         track,
+				OriginalTrack: originalTrack,
+				OutFileName:   outFileName,
+				MksFileName:   mksFileName,
+			})
 		}
 	}
 
-	fmt.Println()
-	if extractedCount == 0 {
-		format.PrintWarning("No subtitle tracks found or no tracks matched the language filter")
-	} else {
-		format.PrintSuccess(fmt.Sprintf("Successfully extracted %d subtitle track(s)", extractedCount))
+	// Execute parallel extraction with progress feedback
+	extractErr := mkv.ExtractSubtitlesParallelWithProgress(jobs, 0) // 0 = auto-detect optimal workers
+	if extractErr != nil {
+		return extractErr
 	}
 
 	return nil
