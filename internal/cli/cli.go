@@ -45,10 +45,10 @@ func AskTrackSelection() string {
 	reader := bufio.NewReader(os.Stdin)
 
 	format.PrintSubSection("Track Selection")
-	format.PrintInfo("Enter language codes and/or track numbers separated by commas:")
-	format.PrintExample("'eng,spa,fre' or '3,5,7' or 'eng,3,spa,7'")
+	format.PrintInfo("Enter language codes and/or track IDs separated by commas:")
+	format.PrintExample("'eng,spa,fre' or '14,16,18' or 'eng,14,spa,16'")
 	format.PrintInfo("Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
-	format.PrintInfo("Track numbers: Use the track numbers shown above")
+	format.PrintInfo("Track IDs: Use the track IDs shown above")
 	format.PrintPrompt("Selection: ")
 
 	input, err := reader.ReadString('\n')
@@ -139,7 +139,7 @@ func ParseTrackSelection(input string) model.TrackSelection {
 		if isValidLanguage {
 			selection.LanguageCodes = append(selection.LanguageCodes, item)
 		} else {
-			format.PrintWarning(fmt.Sprintf("Unknown language code or invalid track number '%s' - skipping", item))
+			format.PrintWarning(fmt.Sprintf("Unknown language code or invalid track ID '%s' - skipping", item))
 		}
 	}
 
@@ -155,13 +155,13 @@ func ShowHelp() {
 `)
 
 	format.PrintUsageSection("Selection Options", `  -x, --extract <file>       Extract subtitles from MKV file
-  -i, --info <file>          Display subtitle track information
-  -s, --select <selection>   Select subtitle tracks by language codes and/or
-                             track numbers. Use comma-separated values.
-                             Language codes: 2-letter (en,es) or 3-letter (eng,spa)
-                             Track numbers: specific track IDs (3,5,7)
-                             Mixed: combine both (e.g., 'eng,3,spa,7')
-                             If not specified, all subtitle tracks will be extracted
+	 -i, --info <file>          Display subtitle track information
+	 -s, --select <selection>   Select subtitle tracks by language codes and/or
+	                            track IDs. Use comma-separated values.
+	                            Language codes: 2-letter (en,es) or 3-letter (eng,spa)
+	                            Track IDs: specific track IDs (14,16,18)
+	                            Mixed: combine both (e.g., 'eng,14,spa,16')
+	                            If not specified, all subtitle tracks will be extracted
 
 `)
 
@@ -180,8 +180,8 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv")
 	format.PrintExample("subscalpelmkv -x video.mkv -s eng")
 	format.PrintExample("subscalpelmkv -x video.mkv -s eng,spa")
-	format.PrintExample("subscalpelmkv -x video.mkv -s 3,5")
-	format.PrintExample("subscalpelmkv -x video.mkv -s eng,3,spa,7")
+	format.PrintExample("subscalpelmkv -x video.mkv -s 14,16")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng,14,spa,16")
 	format.PrintExample("subscalpelmkv -x video.mkv -o ./subtitles")
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
@@ -290,7 +290,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		selection := ParseTrackSelection(selectionInput)
 
 		if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 {
-			format.PrintWarning("No valid language codes or track numbers provided. Exiting.")
+			format.PrintWarning("No valid language codes or track IDs provided. Exiting.")
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			return nil
@@ -306,12 +306,12 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		languageFilter = strings.Join(filterParts, ",")
 
 		if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
-			format.PrintInfo(fmt.Sprintf("Extracting tracks for languages: %s and track numbers: %v",
+			format.PrintInfo(fmt.Sprintf("Extracting tracks for languages: %s and track IDs: %v",
 				strings.Join(selection.LanguageCodes, ","), selection.TrackNumbers))
 		} else if len(selection.LanguageCodes) > 0 {
 			format.PrintInfo(fmt.Sprintf("Extracting tracks for languages: %s", strings.Join(selection.LanguageCodes, ",")))
 		} else {
-			format.PrintInfo(fmt.Sprintf("Extracting track numbers: %v", selection.TrackNumbers))
+			format.PrintInfo(fmt.Sprintf("Extracting track IDs: %v", selection.TrackNumbers))
 		}
 	} else {
 		format.PrintInfo("Extracting all subtitle tracks...")

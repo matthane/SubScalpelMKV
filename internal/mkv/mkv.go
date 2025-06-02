@@ -58,10 +58,10 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 		baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 		idxFileName := baseFileName + ".idx"
 		subFileName := baseFileName + ".sub"
-		format.PrintSuccess(fmt.Sprintf("Extracted track %d (%s) -> %s + %s", originalTrackNumber, track.Properties.Language,
+		format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s + %s", originalTrackNumber, track.Properties.Language,
 			filepath.Base(idxFileName), filepath.Base(subFileName)))
 	} else {
-		format.PrintSuccess(fmt.Sprintf("Extracted track %d (%s) -> %s", originalTrackNumber, track.Properties.Language, outFileName))
+		format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s", originalTrackNumber, track.Properties.Language, outFileName))
 	}
 	return nil
 }

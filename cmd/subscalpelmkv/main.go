@@ -28,11 +28,11 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		selection = cli.ParseTrackSelection(languageFilter)
 		if showFilterMessage {
 			if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
-				format.PrintFilter("Track filter", fmt.Sprintf("languages %v and track numbers %v", selection.LanguageCodes, selection.TrackNumbers))
+				format.PrintFilter("Track filter", fmt.Sprintf("languages %v and track IDs %v", selection.LanguageCodes, selection.TrackNumbers))
 			} else if len(selection.LanguageCodes) > 0 {
 				format.PrintFilter("Language filter", selection.LanguageCodes)
 			} else {
-				format.PrintFilter("Track number filter", selection.TrackNumbers)
+				format.PrintFilter("Track ID filter", selection.TrackNumbers)
 			}
 		}
 	} else if showFilterMessage {
@@ -174,7 +174,7 @@ func main() {
 	flags := struct {
 		Extract        string `short:"x" long:"extract" description:"Extract subtitles from MKV file"`
 		Info           string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
-		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track numbers (e.g., 'eng,3,spa,7')"`
+		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track IDs (e.g., 'eng,14,spa,16')"`
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
 	}{}
