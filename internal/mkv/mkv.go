@@ -93,7 +93,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
 	mksFileName := filepath.Join(dir, baseName+".subtitles.mks")
 
-	format.PrintStep(1, "Preparing selected tracks for extraction")
+	format.PrintStep(1, "Preparing selected tracks for extraction...")
 
 	// First, get track information from the original file to determine which tracks to include
 	originalMkvInfo, err := GetTrackInfo(inputFileName)
