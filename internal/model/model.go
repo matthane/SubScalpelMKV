@@ -196,3 +196,17 @@ func MatchesFormatFilter(codecId, formatFilter string) bool {
 	trackFormat := GetSubtitleFormatFromCodec(codecId)
 	return strings.EqualFold(trackFormat, formatFilter)
 }
+
+// ExtractionJob represents a single subtitle extraction task
+type ExtractionJob struct {
+	Track         MKVTrack
+	OriginalTrack MKVTrack
+	OutFileName   string
+	MksFileName   string
+}
+
+// ExtractionResult represents the result of an extraction operation
+type ExtractionResult struct {
+	Job   ExtractionJob
+	Error error
+}

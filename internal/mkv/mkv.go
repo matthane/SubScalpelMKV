@@ -66,6 +66,60 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 	return nil
 }
 
+// TrackExtractionInfo represents information needed to extract a single track
+type TrackExtractionInfo struct {
+	Track         model.MKVTrack
+	OriginalTrack model.MKVTrack
+	OutFileName   string
+}
+
+// ExtractMultipleSubtitles extracts multiple subtitle tracks from a single input file in one mkvextract call
+func ExtractMultipleSubtitles(inputFileName string, tracks []TrackExtractionInfo) error {
+	if len(tracks) == 0 {
+		return nil
+	}
+
+	// Build the mkvextract command with multiple track:output pairs
+	args := []string{inputFileName, "tracks"}
+
+	// Add each track ID and output filename pair
+	for _, trackInfo := range tracks {
+		trackPair := fmt.Sprintf("%d:%s", trackInfo.Track.Id, trackInfo.OutFileName)
+		args = append(args, trackPair)
+	}
+
+	// Execute the command
+	cmd := exec.Command("mkvextract", args...)
+	output, cmdErr := cmd.Output()
+	if cmdErr != nil {
+		format.PrintError(fmt.Sprintf("Error extracting tracks: %v", cmdErr))
+		fmt.Println(string(output))
+		return cmdErr
+	}
+
+	// Print success messages for each extracted track
+	for _, trackInfo := range tracks {
+		track := trackInfo.Track
+		originalTrack := trackInfo.OriginalTrack
+		outFileName := trackInfo.OutFileName
+
+		// Handle special case for S_VOBSUB which creates both .idx and .sub files
+		if track.Properties.CodecId == "S_VOBSUB" {
+			// For VOBSUB, mkvextract creates both .idx and .sub files automatically
+			// The output filename should have .sub extension, and .idx will be created alongside it
+			baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+			idxFileName := baseFileName + ".idx"
+			subFileName := baseFileName + ".sub"
+			format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s + %s", originalTrack.Properties.Number, track.Properties.Language,
+				filepath.Base(idxFileName), filepath.Base(subFileName)))
+		} else {
+			format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s", originalTrack.Properties.Number, track.Properties.Language, outFileName))
+		}
+	}
+
+	return nil
+}
+
 // CleanupTempFile removes the temporary .mks file
 func CleanupTempFile(fileName string) {
 	if fileName != "" {
@@ -195,4 +249,46 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	// Add spacing after Step 1 completion
 	fmt.Println()
 	return mksFileName, nil
+}
+
+// ProcessTracks groups extraction jobs by input file and processes them efficiently
+func ProcessTracks(jobs []model.ExtractionJob) error {
+	if len(jobs) == 0 {
+		format.PrintWarning("No subtitle tracks to extract")
+		return nil
+	}
+
+	// Group jobs by input file (MksFileName in this case, since that's the actual input for extraction)
+	jobsByInputFile := make(map[string][]TrackExtractionInfo)
+
+	for _, job := range jobs {
+		inputFile := job.MksFileName
+		trackInfo := TrackExtractionInfo{
+			Track:         job.Track,
+			OriginalTrack: job.OriginalTrack,
+			OutFileName:   job.OutFileName,
+		}
+		jobsByInputFile[inputFile] = append(jobsByInputFile[inputFile], trackInfo)
+	}
+
+	// Process each input file with a single mkvextract call
+	successCount := 0
+
+	for inputFile, tracks := range jobsByInputFile {
+		err := ExtractMultipleSubtitles(inputFile, tracks)
+		if err != nil {
+			format.PrintError(fmt.Sprintf("Error extracting tracks from %s: %v", inputFile, err))
+			return err
+		}
+		successCount += len(tracks)
+	}
+
+	fmt.Println()
+	if successCount == 0 {
+		format.PrintWarning("No subtitle tracks were extracted")
+	} else {
+		format.PrintSuccess(fmt.Sprintf("Successfully extracted %d subtitle track(s)", successCount))
+	}
+
+	return nil
 }

@@ -94,8 +94,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	// Step 3: Extract subtitles using parallel processing
 	format.PrintStep(3, "Extracting subtitle tracks...")
 
-	// Prepare extraction jobs for parallel processing
-	var jobs []mkv.ExtractionJob
+	// Prepare extraction jobs for processing
+	var jobs []model.ExtractionJob
 	mksTrackIndex := 0
 
 	for _, track := range mkvInfo.Tracks {
@@ -115,7 +115,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, originalTrack, outputConfig)
 
 			// Create extraction job
-			jobs = append(jobs, mkv.ExtractionJob{
+			jobs = append(jobs, model.ExtractionJob{
 				Track:         track,
 				OriginalTrack: originalTrack,
 				OutFileName:   outFileName,
@@ -124,8 +124,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		}
 	}
 
-	// Execute parallel extraction with progress feedback
-	extractErr := mkv.ExtractSubtitlesParallelWithProgress(jobs, 0) // 0 = auto-detect optimal workers
+	// Execute optimized extraction using single mkvextract call per input file
+	extractErr := mkv.ProcessTracks(jobs)
 	if extractErr != nil {
 		return extractErr
 	}
