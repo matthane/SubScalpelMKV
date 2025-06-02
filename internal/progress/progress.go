@@ -45,11 +45,8 @@ func ShowProgressBar(percentage int) {
 		// Don't print "Muxing subtitle tracks" here - let the caller handle the initial message
 	})
 
-	// Only update if percentage has increased
-	if percentage > lastPercent {
-		renderProgressBar(percentage)
-		lastPercent = percentage
-	}
+	renderProgressBar(percentage)
+	lastPercent = percentage
 
 	// If we've reached 100%, show completion message
 	if percentage >= 100 {

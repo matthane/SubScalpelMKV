@@ -93,7 +93,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
 	mksFileName := filepath.Join(dir, baseName+".subtitles.mks")
 
-	format.PrintStep(1, "Creating temporary subtitle file...")
+	format.PrintStep(1, "Preparing selected tracks for extraction")
 
 	// First, get track information from the original file to determine which tracks to include
 	originalMkvInfo, err := GetTrackInfo(inputFileName)
@@ -164,19 +164,16 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	fmt.Print("\033[?25l")
 
 	// Monitor stdout for progress information
-	progressStarted := false
 	scanner := bufio.NewScanner(stdout)
+
+	// Show initial 0% progress bar immediately
+	util.ShowProgressBar(0)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		// Check if this line contains progress information
 		if percentage, isProgress := util.ParseProgressLine(line); isProgress {
-			// Print the progress header on first progress update
-			if !progressStarted {
-				format.PrintProgress("Muxing subtitle tracks")
-				progressStarted = true
-			}
-
 			// Show progress bar for all progress updates
 			util.ShowProgressBar(percentage)
 		}
