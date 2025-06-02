@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"subscalpelmkv/internal/format"
 )
 
 var (
@@ -25,7 +27,7 @@ type ProgressTheme struct {
 	BarEnd        string
 }
 
-// Default theme
+// Default theme with colors
 var defaultTheme = ProgressTheme{
 	Saucer:        "█",
 	SaucerHead:    "█",
@@ -40,7 +42,7 @@ func ShowProgressBar(percentage int) {
 	once.Do(func() {
 		startTime = time.Now()
 		lastPercent = 0
-		fmt.Print("🎬 Muxing subtitle tracks\n")
+		// Don't print "Muxing subtitle tracks" here - let the caller handle the initial message
 	})
 
 	// Only update if percentage has increased
@@ -52,7 +54,8 @@ func ShowProgressBar(percentage int) {
 	// If we've reached 100%, show completion message
 	if percentage >= 100 {
 		elapsed := time.Since(startTime)
-		fmt.Printf("\n✅ Complete! Elapsed time: %s\n", formatDuration(elapsed))
+		fmt.Printf("\n")
+		format.PrintProgressComplete(fmt.Sprintf("Complete! Elapsed time: %s", formatDuration(elapsed)))
 	}
 }
 
@@ -85,24 +88,24 @@ func renderProgressBar(percentage int) {
 	var bar strings.Builder
 
 	// Start character
-	bar.WriteString(defaultTheme.BarStart)
+	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarStart))
 
 	// Filled portion
 	for i := 0; i < filledWidth; i++ {
-		bar.WriteString(defaultTheme.Saucer)
+		bar.WriteString(format.ProgressFillColor.Sprint(defaultTheme.Saucer))
 	}
 
 	// Empty portion
 	for i := 0; i < emptyWidth; i++ {
-		bar.WriteString(defaultTheme.SaucerPadding)
+		bar.WriteString(format.ProgressEmptyColor.Sprint(defaultTheme.SaucerPadding))
 	}
 
 	// End character
-	bar.WriteString(defaultTheme.BarEnd)
+	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarEnd))
 
 	// Print the progress bar with percentage
 	// Use a consistent format and ensure we overwrite the entire line
-	progressLine := fmt.Sprintf("%s %3d%%", bar.String(), percentage)
+	progressLine := fmt.Sprintf("%s %s", bar.String(), format.ProgressPercentColor.Sprintf("%3d%%", percentage))
 
 	// Pad with spaces to ensure we overwrite any previous longer content
 	const minLineLength = 120

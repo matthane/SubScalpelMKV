@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/model"
 	"subscalpelmkv/internal/util"
 )
@@ -45,7 +46,7 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 	)
 	output, cmdErr := cmd.Output()
 	if cmdErr != nil {
-		fmt.Printf("Error extracting track %d: %v\n", track.Id, cmdErr)
+		format.PrintError(fmt.Sprintf("Error extracting track %d: %v", track.Id, cmdErr))
 		fmt.Println(string(output))
 		return cmdErr
 	}
@@ -57,10 +58,10 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 		baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 		idxFileName := baseFileName + ".idx"
 		subFileName := baseFileName + ".sub"
-		fmt.Printf("  ✓ Extracted track %d (%s) -> %s + %s\n", originalTrackNumber, track.Properties.Language,
-			filepath.Base(idxFileName), filepath.Base(subFileName))
+		format.PrintSuccess(fmt.Sprintf("Extracted track %d (%s) -> %s + %s", originalTrackNumber, track.Properties.Language,
+			filepath.Base(idxFileName), filepath.Base(subFileName)))
 	} else {
-		fmt.Printf("  ✓ Extracted track %d (%s) -> %s\n", originalTrackNumber, track.Properties.Language, outFileName)
+		format.PrintSuccess(fmt.Sprintf("Extracted track %d (%s) -> %s", originalTrackNumber, track.Properties.Language, outFileName))
 	}
 	return nil
 }
@@ -82,7 +83,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		dir = outputConfig.OutputDir
 		// Always create output directory if it doesn't exist
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			fmt.Printf("Warning: Could not create output directory %s: %v\n", dir, err)
+			format.PrintWarning(fmt.Sprintf("Could not create output directory %s: %v", dir, err))
 			// Fall back to input file directory
 			dir = filepath.Dir(inputFileName)
 		}
@@ -92,7 +93,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
 	mksFileName := filepath.Join(dir, baseName+".subtitles.mks")
 
-	fmt.Println("Step 1: Creating temporary subtitle file...")
+	format.PrintStep(1, "Creating temporary subtitle file...")
 
 	// First, get track information from the original file to determine which tracks to include
 	originalMkvInfo, err := GetTrackInfo(inputFileName)
@@ -142,7 +143,7 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 				}
 			}
 		}
-		fmt.Printf("  Including subtitle tracks: %s\n", strings.Join(displayTrackNumbers, ","))
+		format.PrintInfo(fmt.Sprintf("Including subtitle tracks: %s", strings.Join(displayTrackNumbers, ",")))
 	}
 
 	args = append(args, inputFileName)
@@ -162,9 +163,6 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	// Hide cursor for cleaner progress display
 	fmt.Print("\033[?25l")
 
-	// Show initial status while mkvmerge initializes
-	fmt.Print("Muxing subtitle tracks... [initializing...]")
-
 	// Monitor stdout for progress information
 	progressStarted := false
 	scanner := bufio.NewScanner(stdout)
@@ -173,17 +171,14 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 
 		// Check if this line contains progress information
 		if percentage, isProgress := util.ParseProgressLine(line); isProgress {
-			// Only start showing progress bar when we get non-zero progress
-			if percentage > 0 && !progressStarted {
-				// Clear the initializing message on first real progress update
-				fmt.Print("\r\033[K")
+			// Print the progress header on first progress update
+			if !progressStarted {
+				format.PrintProgress("Muxing subtitle tracks")
 				progressStarted = true
 			}
 
-			// Only show progress bar if we've started (non-zero progress detected)
-			if progressStarted {
-				util.ShowProgressBar(percentage)
-			}
+			// Show progress bar for all progress updates
+			util.ShowProgressBar(percentage)
 		}
 	}
 
@@ -196,9 +191,11 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 	if cmdErr != nil {
 		// Clear the progress line before showing error
 		fmt.Print("\r\033[K")
-		fmt.Printf("Error creating temporary subtitle file: %v\n", cmdErr)
+		format.PrintError(fmt.Sprintf("Error creating temporary subtitle file: %v", cmdErr))
 		return "", cmdErr
 	}
 
+	// Add spacing after Step 1 completion
+	fmt.Println()
 	return mksFileName, nil
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/mkv"
 	"subscalpelmkv/internal/model"
 	"subscalpelmkv/internal/util"
@@ -17,10 +18,10 @@ func AskUserConfirmation() bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Print("Extract all tracks? Y/n (default: Y): ")
+		format.PrintPrompt("Extract all tracks? Y/n (default: Y): ")
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("Error reading input: %v\n", err)
+			format.PrintError(fmt.Sprintf("Error reading input: %v", err))
 			continue
 		}
 
@@ -35,7 +36,7 @@ func AskUserConfirmation() bool {
 			return false
 		}
 
-		fmt.Println("Please enter 'Y' for yes or 'N' for no.")
+		format.PrintWarning("Please enter 'Y' for yes or 'N' for no.")
 	}
 }
 
@@ -43,15 +44,16 @@ func AskUserConfirmation() bool {
 func AskTrackSelection() string {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("\nEnter language codes and/or track numbers separated by commas:")
-	fmt.Println("Examples: 'eng,spa,fre' or '3,5,7' or 'eng,3,spa,7'")
-	fmt.Println("Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
-	fmt.Println("Track numbers: Use the track numbers shown above")
-	fmt.Print("Selection: ")
+	format.PrintSubSection("Track Selection")
+	format.PrintInfo("Enter language codes and/or track numbers separated by commas:")
+	format.PrintExample("'eng,spa,fre' or '3,5,7' or 'eng,3,spa,7'")
+	format.PrintInfo("Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
+	format.PrintInfo("Track numbers: Use the track numbers shown above")
+	format.PrintPrompt("Selection: ")
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
-		fmt.Printf("Error reading input: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error reading input: %v", err))
 		return ""
 	}
 
@@ -89,7 +91,7 @@ func ParseLanguageCodes(input string) []string {
 		if isValid {
 			validCodes = append(validCodes, code)
 		} else {
-			fmt.Printf("Warning: Unknown language code '%s' - skipping\n", code)
+			format.PrintWarning(fmt.Sprintf("Unknown language code '%s' - skipping", code))
 		}
 	}
 
@@ -137,7 +139,7 @@ func ParseTrackSelection(input string) model.TrackSelection {
 		if isValidLanguage {
 			selection.LanguageCodes = append(selection.LanguageCodes, item)
 		} else {
-			fmt.Printf("Warning: Unknown language code or invalid track number '%s' - skipping\n", item)
+			format.PrintWarning(fmt.Sprintf("Unknown language code or invalid track number '%s' - skipping", item))
 		}
 	}
 
@@ -146,88 +148,85 @@ func ParseTrackSelection(input string) model.TrackSelection {
 
 // ShowHelp displays the help message
 func ShowHelp() {
-	fmt.Println("\nUsage:")
-	fmt.Println("  subscalpelmkv [OPTIONS] <file>")
-	fmt.Println("  subscalpelmkv -x <file> [selection options] [output options]")
-	fmt.Println("  subscalpelmkv -i <file>")
-	fmt.Println()
-	fmt.Println("Selection Options:")
-	fmt.Println("  -x, --extract <file>       Extract subtitles from MKV file")
-	fmt.Println("  -i, --info <file>          Display subtitle track information")
-	fmt.Println("  -s, --select <selection>   Select subtitle tracks by language codes and/or")
-	fmt.Println("                             track numbers. Use comma-separated values.")
-	fmt.Println("                             Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
-	fmt.Println("                             Track numbers: specific track IDs (3,5,7)")
-	fmt.Println("                             Mixed: combine both (e.g., 'eng,3,spa,7')")
-	fmt.Println("                             If not specified, all subtitle tracks will be extracted")
-	fmt.Println()
-	fmt.Println("Output Options:")
-	fmt.Println("  -o, --output-dir <dir>     Output directory for extracted subtitle files")
-	fmt.Println("                             (default: same directory as input file)")
-	fmt.Println("                             Output directory will be created if it doesn't exist")
-	fmt.Println("  -f, --format <template>    Custom filename template with placeholders:")
-	fmt.Println("                             {basename}, {language}, {trackno}, {trackname},")
-	fmt.Println("                             {forced}, {default}, {extension}")
-	fmt.Println("  -h, --help                 Show this help message")
-	fmt.Println()
-	fmt.Println("Examples:")
-	fmt.Println("  subscalpelmkv -i video.mkv")
-	fmt.Println("  subscalpelmkv -x video.mkv")
-	fmt.Println("  subscalpelmkv -x video.mkv -s eng")
-	fmt.Println("  subscalpelmkv -x video.mkv -s eng,spa")
-	fmt.Println("  subscalpelmkv -x video.mkv -s 3,5")
-	fmt.Println("  subscalpelmkv -x video.mkv -s eng,3,spa,7")
-	fmt.Println("  subscalpelmkv -x video.mkv -o ./subtitles")
-	fmt.Println("  subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
-	fmt.Println("  subscalpelmkv video.mkv    (drag-and-drop mode)")
-	fmt.Println()
-	fmt.Println("Default filename template:")
-	fmt.Println("  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}")
-	fmt.Println()
-	fmt.Println("Language codes:")
-	fmt.Println("  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes")
-	fmt.Println()
-	fmt.Println("Drag-and-drop mode:")
-	fmt.Println("  Simply drag an MKV file onto the executable for interactive mode")
-	fmt.Println("  with track selection options.")
+	format.PrintUsageSection("Usage", `  subscalpelmkv [OPTIONS] <file>
+  subscalpelmkv -x <file> [selection options] [output options]
+  subscalpelmkv -i <file>
+
+`)
+
+	format.PrintUsageSection("Selection Options", `  -x, --extract <file>       Extract subtitles from MKV file
+  -i, --info <file>          Display subtitle track information
+  -s, --select <selection>   Select subtitle tracks by language codes and/or
+                             track numbers. Use comma-separated values.
+                             Language codes: 2-letter (en,es) or 3-letter (eng,spa)
+                             Track numbers: specific track IDs (3,5,7)
+                             Mixed: combine both (e.g., 'eng,3,spa,7')
+                             If not specified, all subtitle tracks will be extracted
+
+`)
+
+	format.PrintUsageSection("Output Options", `  -o, --output-dir <dir>     Output directory for extracted subtitle files
+                             (default: same directory as input file)
+                             Output directory will be created if it doesn't exist
+  -f, --format <template>    Custom filename template with placeholders:
+                             {basename}, {language}, {trackno}, {trackname},
+                             {forced}, {default}, {extension}
+  -h, --help                 Show this help message
+
+`)
+
+	format.PrintUsageSection("Examples", "")
+	format.PrintExample("subscalpelmkv -i video.mkv")
+	format.PrintExample("subscalpelmkv -x video.mkv")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng,spa")
+	format.PrintExample("subscalpelmkv -x video.mkv -s 3,5")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng,3,spa,7")
+	format.PrintExample("subscalpelmkv -x video.mkv -o ./subtitles")
+	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
+	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
+
+	format.PrintUsageSection("Default filename template", `  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}
+
+`)
+
+	format.PrintUsageSection("Language codes", `  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes
+
+`)
+
+	format.PrintUsageSection("Drag-and-drop mode", `  Simply drag an MKV file onto the executable for interactive mode
+  with track selection options.
+`)
 }
 
 // DisplaySubtitleTracks shows available subtitle tracks to the user
 func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
-	fmt.Println("\nAvailable subtitle tracks:")
-	fmt.Println("==========================")
+	format.PrintSection("Available subtitle tracks")
 
 	subtitleCount := 0
 	for _, track := range mkvInfo.Tracks {
 		if track.Type == "subtitles" {
 			subtitleCount++
-			trackInfo := fmt.Sprintf("Track %d: %s", track.Properties.Number, track.Properties.Language)
-
-			if track.Properties.TrackName != "" {
-				trackInfo += fmt.Sprintf(" (%s)", track.Properties.TrackName)
-			}
-
-			if track.Properties.Forced {
-				trackInfo += " [FORCED]"
-			}
-
-			if track.Properties.Default {
-				trackInfo += " [DEFAULT]"
-			}
 
 			// Show codec type
 			codecType := "Unknown"
 			if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
 				codecType = strings.ToUpper(ext)
 			}
-			trackInfo += fmt.Sprintf(" [%s]", codecType)
 
-			fmt.Printf("  %s\n", trackInfo)
+			format.PrintTrackInfo(
+				track.Properties.Number,
+				track.Properties.Language,
+				track.Properties.TrackName,
+				codecType,
+				track.Properties.Forced,
+				track.Properties.Default,
+			)
 		}
 	}
 
 	if subtitleCount == 0 {
-		fmt.Println("  No subtitle tracks found in this file.")
+		format.PrintWarning("No subtitle tracks found in this file.")
 	}
 	fmt.Println()
 }
@@ -250,13 +249,13 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 
 // HandleDragAndDropModeWithConfig handles the interactive drag-and-drop mode with output configuration
 func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig) error, outputConfig model.OutputConfig) error {
-	fmt.Printf("Processing file: %s\n", inputFileName)
+	format.PrintInfo(fmt.Sprintf("Processing file: %s", inputFileName))
 
 	// Get track information using mkv package to show available subtitle tracks
-	fmt.Println("Analyzing file...")
+	format.PrintInfo("Analyzing file...")
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error: %v", err))
 		fmt.Println("Press Enter to exit...")
 		fmt.Scanln()
 		return err
@@ -275,7 +274,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	}
 
 	if !hasSubtitles {
-		fmt.Println("No subtitle tracks found in this file.")
+		format.PrintWarning("No subtitle tracks found in this file.")
 		fmt.Println("Press Enter to exit...")
 		fmt.Scanln()
 		return nil
@@ -291,7 +290,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		selection := ParseTrackSelection(selectionInput)
 
 		if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 {
-			fmt.Println("No valid language codes or track numbers provided. Exiting.")
+			format.PrintWarning("No valid language codes or track numbers provided. Exiting.")
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			return nil
@@ -307,20 +306,21 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 		languageFilter = strings.Join(filterParts, ",")
 
 		if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
-			fmt.Printf("\nExtracting tracks for languages: %s and track numbers: %v\n\n",
-				strings.Join(selection.LanguageCodes, ","), selection.TrackNumbers)
+			format.PrintInfo(fmt.Sprintf("Extracting tracks for languages: %s and track numbers: %v",
+				strings.Join(selection.LanguageCodes, ","), selection.TrackNumbers))
 		} else if len(selection.LanguageCodes) > 0 {
-			fmt.Printf("\nExtracting tracks for languages: %s\n\n", strings.Join(selection.LanguageCodes, ","))
+			format.PrintInfo(fmt.Sprintf("Extracting tracks for languages: %s", strings.Join(selection.LanguageCodes, ",")))
 		} else {
-			fmt.Printf("\nExtracting track numbers: %v\n\n", selection.TrackNumbers)
+			format.PrintInfo(fmt.Sprintf("Extracting track numbers: %v", selection.TrackNumbers))
 		}
 	} else {
-		fmt.Println("\nExtracting all subtitle tracks...")
+		format.PrintInfo("Extracting all subtitle tracks...")
 	}
+	fmt.Println()
 
 	err = processFileFunc(inputFileName, languageFilter, false, outputConfig)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error: %v", err))
 		fmt.Println("Press Enter to exit...")
 		fmt.Scanln()
 		return err
@@ -340,22 +340,22 @@ func BuildSelectionFilter(input string) string {
 func ShowFileInfo(inputFileName string) error {
 	// Validate input file using util package
 	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
-		fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+		format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 		return statErr
 	}
 
 	// Check if file is MKV using util package
 	if !util.IsMKVFile(inputFileName) {
-		fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+		format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 		return fmt.Errorf("file is not an MKV file")
 	}
 
-	fmt.Printf("Analyzing file: %s\n", inputFileName)
+	format.PrintInfo(fmt.Sprintf("Analyzing file: %s", inputFileName))
 
 	// Get track information using mkv package
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
-		fmt.Printf("Error analyzing file: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error analyzing file: %v", err))
 		return err
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/devfacet/gocmd/v3"
 
 	"subscalpelmkv/internal/cli"
+	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/mkv"
 	"subscalpelmkv/internal/model"
 	"subscalpelmkv/internal/util"
@@ -27,35 +28,35 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		selection = cli.ParseTrackSelection(languageFilter)
 		if showFilterMessage {
 			if len(selection.LanguageCodes) > 0 && len(selection.TrackNumbers) > 0 {
-				fmt.Printf("Track filter: languages %v and track numbers %v (only muxing and extracting matching tracks)\n",
-					selection.LanguageCodes, selection.TrackNumbers)
+				format.PrintFilter("Track filter", fmt.Sprintf("languages %v and track numbers %v", selection.LanguageCodes, selection.TrackNumbers))
 			} else if len(selection.LanguageCodes) > 0 {
-				fmt.Printf("Language filter: %v (only muxing and extracting matching tracks)\n", selection.LanguageCodes)
+				format.PrintFilter("Language filter", selection.LanguageCodes)
 			} else {
-				fmt.Printf("Track number filter: %v (only muxing and extracting matching tracks)\n", selection.TrackNumbers)
+				format.PrintFilter("Track number filter", selection.TrackNumbers)
 			}
 		}
 	} else if showFilterMessage {
-		fmt.Println("No filter - muxing and extracting all subtitle tracks")
+		format.PrintInfo("No filter - muxing and extracting all subtitle tracks")
 	}
 
 	// Validate input file using util package
 	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
-		fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+		format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 		return statErr
 	}
 	if !util.IsMKVFile(inputFileName) {
-		fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+		format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 		return errors.New("file is not an MKV file")
 	}
 
 	// Step 0: Get original track information to preserve track numbers
-	fmt.Println("Analyzing original file...")
+	format.PrintInfo("Analyzing original file...")
 	originalMkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
-		fmt.Printf("Error analyzing original file: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error analyzing original file: %v", err))
 		return err
 	}
+	fmt.Println()
 
 	// Create an ordered list of original tracks that match the selection criteria
 	// This preserves the order in which tracks appear in the original file
@@ -75,15 +76,16 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	defer mkv.CleanupTempFile(mksFileName)
 
 	// Step 2: Get track information from the temporary .mks file
-	fmt.Println("Step 2: Analyzing subtitle tracks...")
+	format.PrintStep(2, "Analyzing subtitle tracks...")
 	mkvInfo, err := mkv.GetTrackInfo(mksFileName)
 	if err != nil {
-		fmt.Printf("Error analyzing subtitle tracks: %v\n", err)
+		format.PrintError(fmt.Sprintf("Error analyzing subtitle tracks: %v", err))
 		return err
 	}
+	fmt.Println()
 
 	// Step 3: Extract subtitles using mkv and util packages
-	fmt.Println("Step 3: Extracting subtitle tracks...")
+	format.PrintStep(3, "Extracting subtitle tracks...")
 	extractedCount := 0
 	mksTrackIndex := 0
 
@@ -95,7 +97,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 			if mksTrackIndex < len(selectedOriginalTracks) {
 				originalTrack = selectedOriginalTracks[mksTrackIndex]
 			} else {
-				fmt.Printf("Warning: Track index mismatch, using renumbered track info for track %d\n", track.Id)
+				format.PrintWarning(fmt.Sprintf("Track index mismatch, using renumbered track info for track %d", track.Id))
 				originalTrack = track
 			}
 			mksTrackIndex++
@@ -105,7 +107,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 			// Extract subtitles using mkv package (use the .mks file track ID for extraction)
 			extractSubsErr := mkv.ExtractSubtitles(mksFileName, track, outFileName, originalTrack.Properties.Number)
 			if extractSubsErr != nil {
-				fmt.Printf("Error extracting subtitles: %v\n", extractSubsErr)
+				format.PrintError(fmt.Sprintf("Error extracting subtitles: %v", extractSubsErr))
 				return extractSubsErr
 			}
 			extractedCount++
@@ -114,17 +116,16 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 
 	fmt.Println()
 	if extractedCount == 0 {
-		fmt.Println("No subtitle tracks found or no tracks matched the language filter")
+		format.PrintWarning("No subtitle tracks found or no tracks matched the language filter")
 	} else {
-		fmt.Printf("✓ Successfully extracted %d subtitle track(s)\n", extractedCount)
+		format.PrintSuccess(fmt.Sprintf("Successfully extracted %d subtitle track(s)", extractedCount))
 	}
 
 	return nil
 }
 
 func main() {
-	fmt.Println("🎞️🗡️ SubScalpelMKV")
-	fmt.Println("===================")
+	format.PrintTitle()
 
 	// Parse command-line arguments using gocmd
 	args := os.Args[1:]
@@ -144,13 +145,13 @@ func main() {
 
 		// Validate file exists and is MKV
 		if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
-			fmt.Printf("Error: File does not exist or is a directory: %s\n", inputFileName)
+			format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
 		if !util.IsMKVFile(inputFileName) {
-			fmt.Printf("Error: File is not an MKV file: %s\n", inputFileName)
+			format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
@@ -188,13 +189,13 @@ func main() {
 	})
 
 	if cmdErr != nil {
-		fmt.Printf("Error creating command: %v\n", cmdErr)
+		format.PrintError(fmt.Sprintf("Error creating command: %v", cmdErr))
 		return
 	}
 
 	// Check which flag was provided and handle accordingly
 	if flags.Extract != "" && flags.Info != "" {
-		fmt.Println("Error: Cannot use both --extract and --info flags simultaneously")
+		format.PrintError("Cannot use both --extract and --info flags simultaneously")
 		os.Exit(ErrCodeFailure)
 	}
 
