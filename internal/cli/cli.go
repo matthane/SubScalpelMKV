@@ -220,10 +220,10 @@ func ShowHelp() {
 
 // DisplaySubtitleTracks shows available subtitle tracks to the user
 func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
-	format.PrintSection("Available subtitle tracks")
+	format.PrintSection("Available Subtitle Tracks")
 
 	subtitleCount := 0
-	for _, track := range mkvInfo.Tracks {
+	for i, track := range mkvInfo.Tracks {
 		if track.Type == "subtitles" {
 			subtitleCount++
 
@@ -232,21 +232,69 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 				codecType = strings.ToUpper(ext)
 			}
 
-			format.PrintTrackInfo(
-				track.Properties.Number,
-				track.Properties.Language,
-				track.Properties.TrackName,
-				codecType,
-				track.Properties.Forced,
-				track.Properties.Default,
-			)
+			// For simple SUP tracks without attributes, we need to print codec on second line
+			if !track.Properties.Forced && !track.Properties.Default && codecType != "" {
+				// Print track info without codec (it will be on second line)
+				format.PrintTrackInfo(
+					track.Properties.Number,
+					track.Properties.Language,
+					track.Properties.TrackName,
+					"", // Empty codec - we'll print it separately
+					track.Properties.Forced,
+					track.Properties.Default,
+				)
+				// Print codec on second line
+				format.BorderColor.Print("│   ")
+				format.CodecColor.Print(codecType)
+				// The visible length is 3 (for "   ") + len(codecType)
+				visibleLen := 3 + len(codecType)
+				padding := format.BoxWidth - visibleLen - 1 // -1 for space before closing border
+				if padding > 0 {
+					fmt.Print(strings.Repeat(" ", padding))
+				}
+				format.BorderColor.Println(" │")
+			} else {
+				// Normal display with attributes
+				format.PrintTrackInfo(
+					track.Properties.Number,
+					track.Properties.Language,
+					track.Properties.TrackName,
+					codecType,
+					track.Properties.Forced,
+					track.Properties.Default,
+				)
+			}
+			
+			// Add separator between tracks except for the last one
+			if i < len(mkvInfo.Tracks)-1 {
+				// Check if there are more subtitle tracks after this one
+				hasMoreSubtitles := false
+				for j := i + 1; j < len(mkvInfo.Tracks); j++ {
+					if mkvInfo.Tracks[j].Type == "subtitles" {
+						hasMoreSubtitles = true
+						break
+					}
+				}
+				if hasMoreSubtitles {
+					format.DrawSeparator(format.BoxWidth)
+				}
+			}
 		}
 	}
 
 	if subtitleCount == 0 {
-		format.PrintWarning("No subtitle tracks found in this file.")
+		noTracksMsg := "No subtitle tracks found in this file."
+		visibleLen := 2 + len(noTracksMsg) // "│ " + message
+		padding := format.BoxWidth - visibleLen - 1 // -1 for space before closing border
+		format.BorderColor.Print("│ ")
+		format.WarningColor.Print(noTracksMsg)
+		if padding > 0 {
+			fmt.Print(strings.Repeat(" ", padding))
+		}
+		format.BorderColor.Println(" │")
 	}
-	fmt.Println()
+	
+	format.DrawBoxBottom(format.BoxWidth)
 }
 
 // HandleDragAndDropMode handles the interactive drag-and-drop mode (backward compatibility)

@@ -73,36 +73,56 @@ func formatDuration(d time.Duration) string {
 	}
 }
 
-// renderProgressBar renders the progress bar to stdout
+// renderProgressBar renders the progress bar to stdout with modern styling
 func renderProgressBar(percentage int) {
-	filledWidth := int(float64(barWidth) * float64(percentage) / 100.0)
-	emptyWidth := barWidth - filledWidth
+	// Adjust bar width for modern style
+	actualBarWidth := 35
+	filledWidth := int(float64(actualBarWidth) * float64(percentage) / 100.0)
+	emptyWidth := actualBarWidth - filledWidth
 
-	var bar strings.Builder
-
-	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarStart))
-
+	// Build the progress line
+	var progressLine strings.Builder
+	
+	// Start with box border
+	progressLine.WriteString("│ ")
+	progressLine.WriteString(format.InfoColor.Sprint("►"))
+	progressLine.WriteString(" Processing: ")
+	
+	// Progress bar
+	progressLine.WriteString(format.ProgressBg.Sprint("["))
+	
+	// Filled portion
 	for i := 0; i < filledWidth; i++ {
-		bar.WriteString(format.ProgressFillColor.Sprint(defaultTheme.Saucer))
+		progressLine.WriteString(format.ProgressFg.Sprint("█"))
 	}
-
+	
+	// Empty portion
 	for i := 0; i < emptyWidth; i++ {
-		bar.WriteString(format.ProgressEmptyColor.Sprint(defaultTheme.SaucerPadding))
+		progressLine.WriteString(format.ProgressBg.Sprint("░"))
 	}
-
-	bar.WriteString(format.ProgressBarColor.Sprint(defaultTheme.BarEnd))
-
-	// Print the progress bar with percentage
-	// Use a consistent format and ensure we overwrite the entire line
-	progressLine := fmt.Sprintf("%s %s", bar.String(), format.ProgressPercentColor.Sprintf("%3d%%", percentage))
-
-	// Pad with spaces to ensure we overwrite any previous longer content
-	const minLineLength = 120
-	if len(progressLine) < minLineLength {
-		progressLine += strings.Repeat(" ", minLineLength-len(progressLine))
+	
+	progressLine.WriteString(format.ProgressBg.Sprint("]"))
+	
+	// Percentage
+	progressLine.WriteString(format.BaseHighlight.Sprintf(" %3d%%", percentage))
+	
+	// Elapsed time
+	elapsed := time.Since(startTime)
+	elapsedStr := formatDuration(elapsed)
+	progressLine.WriteString(format.BaseDim.Sprintf(" • %s", elapsedStr))
+	
+	// Calculate visible length for padding
+	// 2 (border) + 1 (icon) + 12 (" Processing: ") + 1 ([) + 35 (bar) + 1 (]) + 5 (percentage) + 3 (" • ") + len(elapsed)
+	visibleLen := 2 + 1 + 12 + 1 + actualBarWidth + 1 + 5 + 3 + len(elapsedStr)
+	padding := format.BoxWidth - visibleLen - 2
+	
+	if padding > 0 {
+		progressLine.WriteString(strings.Repeat(" ", padding))
 	}
-
-	fmt.Printf("\r%s", progressLine)
+	progressLine.WriteString(" │")
+	
+	// Print with carriage return to overwrite and clear to end of line
+	fmt.Print("\r" + progressLine.String() + "\033[K")
 
 	// Ensure the output is flushed immediately
 	os.Stdout.Sync()
