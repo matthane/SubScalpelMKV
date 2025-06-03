@@ -167,8 +167,8 @@ You can customize the output filename format using the `-f` flag with placeholde
 # Detailed format: movie.english.track001.srt
 -f "{basename}.{language}.track{trackno}.{extension}"
 
-# Organized by language: eng/movie.srt
--f "{language}/{basename}.{extension}"
+# Include forced/default flags: movie.forced.srt
+-f "{basename}.{forced}.{extension}"
 ```
 
 #### Output Directory Control
