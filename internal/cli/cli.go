@@ -163,9 +163,7 @@ func ParseTrackSelection(input string) model.TrackSelection {
 func ShowHelp() {
 	format.PrintUsageSection("Usage", `  subscalpelmkv [OPTIONS] <file>
   subscalpelmkv -x <file> [selection options] [output options]
-  subscalpelmkv -i <file>
-
-`)
+  subscalpelmkv -i <file>`)
 
 	format.PrintUsageSection("Selection Options", `  -x, --extract <file>       Extract subtitles from MKV file
 	 -i, --info <file>          Display subtitle track information
@@ -175,9 +173,7 @@ func ShowHelp() {
 	                            Track IDs: specific track IDs (14,16,18)
 	                            Subtitle formats: srt, ass, ssa, sup, sub, vtt, usf, etc.
 	                            Mixed: combine all types (e.g., 'eng,14,srt,sup')
-	                            If not specified, all subtitle tracks will be extracted
-
-`)
+	                            If not specified, all subtitle tracks will be extracted`)
 
 	format.PrintUsageSection("Output Options", `  -o, --output-dir <dir>     Output directory for extracted subtitle files
                              (default: same directory as input file)
@@ -185,9 +181,7 @@ func ShowHelp() {
   -f, --format <template>    Custom filename template with placeholders:
                              {basename}, {language}, {trackno}, {trackname},
                              {forced}, {default}, {extension}
-  -h, --help                 Show this help message
-
-`)
+  -h, --help                 Show this help message`)
 
 	format.PrintUsageSection("Examples", "")
 	format.PrintExample("subscalpelmkv -i video.mkv")
@@ -202,13 +196,9 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
 
-	format.PrintUsageSection("Default filename template", `  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}
+	format.PrintUsageSection("Default filename template", `  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}`)
 
-`)
-
-	format.PrintUsageSection("Language codes", `  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes
-
-`)
+	format.PrintUsageSection("Language codes", `  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes`)
 
 	format.PrintUsageSection("Drag-and-drop mode", `  Simply drag an MKV file onto the executable for interactive mode
   with track selection options.

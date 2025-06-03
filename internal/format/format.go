@@ -130,7 +130,8 @@ func PrintSection(title string) {
 // PrintSubSection prints a subsection header
 func PrintSubSection(title string) {
 	fmt.Println()
-	HeaderColor.Printf("● %s\n", title)
+	HeaderColor.Printf("● %s", title)
+	fmt.Println()
 }
 
 // PrintSuccess prints a success message with modern styling
@@ -147,7 +148,7 @@ func PrintError(message string) {
 
 // PrintCriticalError prints a critical error with prominent background
 func PrintCriticalError(message string) {
-	CriticalError.Printf(" ❌ %s ", message)
+	CriticalError.Printf(" ❌ %s", message)
 	fmt.Println()
 }
 
@@ -284,15 +285,15 @@ func PrintProgressWithPercentage(filename string, percentage int) {
 
 // PrintProgressComplete prints completion message with modern styling
 func PrintProgressComplete(message string) {
-	fmt.Print("\n")
 	SuccessColor.Print("  ✓ ")
-	BaseFg.Printf("%s\n", message)
+	BaseFg.Println(message)
 }
 
 // PrintUsageSection prints a help section with title
 func PrintUsageSection(title, content string) {
 	fmt.Println()
-	HeaderColor.Printf("%s:\n", title)
+	HeaderColor.Printf("%s:", title)
+	fmt.Println()
 	fmt.Print(content)
 }
 
@@ -303,7 +304,7 @@ func PrintExample(command string) {
 
 // PrintImportantNotice prints a highlighted notice
 func PrintImportantNotice(message string) {
-	ImportantNotice.Printf(" ⚠ %s ", message)
+	ImportantNotice.Printf(" ⚠ %s", message)
 	fmt.Println()
 }
 

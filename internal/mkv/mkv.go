@@ -236,7 +236,6 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		return "", cmdErr
 	}
 
-	fmt.Println()
 	return mksFileName, nil
 }
 
@@ -272,7 +271,6 @@ func ProcessTracks(jobs []model.ExtractionJob) error {
 		successCount += len(tracks)
 	}
 
-	fmt.Println()
 	if successCount == 0 {
 		format.PrintWarning("No subtitle tracks were extracted")
 	} else {

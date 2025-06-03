@@ -60,7 +60,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		format.PrintError(fmt.Sprintf("Error analyzing original file: %v", err))
 		return err
 	}
-	fmt.Println()
 
 	// Create an ordered list of original tracks that match the selection criteria
 	// This preserves the order in which tracks appear in the original file
@@ -85,7 +84,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		format.PrintError(fmt.Sprintf("Error analyzing subtitle tracks: %v", err))
 		return err
 	}
-	fmt.Println()
 
 	// Step 2: Extract subtitles
 	format.PrintStep(2, "Extracting subtitle tracks...")
