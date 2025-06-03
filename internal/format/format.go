@@ -200,7 +200,7 @@ func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecT
 	// First line: Track info
 	// Print each part separately to avoid ANSI code length issues
 	BorderColor.Print("│ ")
-	trackColor.Print("█")
+	trackColor.Print("▪")
 	fmt.Print(" ")
 	BaseFg.Print("Track ")
 	BaseHighlight.Print(trackNum)

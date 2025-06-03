@@ -355,7 +355,6 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	format.PrintInfo(fmt.Sprintf("Processing file: %s", inputFileName))
 
 	// Get track information to show available subtitle tracks
-	format.PrintInfo("Analyzing file...")
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
@@ -454,8 +453,6 @@ func ShowFileInfo(inputFileName string) error {
 		format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 		return fmt.Errorf("file is not an MKV file")
 	}
-
-	format.PrintInfo(fmt.Sprintf("Analyzing file: %s", inputFileName))
 
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
