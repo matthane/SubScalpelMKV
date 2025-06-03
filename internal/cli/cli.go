@@ -289,6 +289,47 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 			fmt.Print(strings.Repeat(" ", padding))
 		}
 		format.BorderColor.Println(" │")
+	} else {
+		// Calculate summary statistics
+		languageSet := make(map[string]bool)
+		forcedCount := 0
+		defaultCount := 0
+		
+		for _, track := range mkvInfo.Tracks {
+			if track.Type == "subtitles" {
+				// Track unique languages
+				if track.Properties.Language != "" {
+					languageSet[track.Properties.Language] = true
+				}
+				
+				// Count forced tracks
+				if track.Properties.Forced {
+					forcedCount++
+				}
+				
+				// Count default tracks
+				if track.Properties.Default {
+					defaultCount++
+				}
+			}
+		}
+		
+		// Add separator before summary
+		if subtitleCount > 0 {
+			format.DrawSeparator(format.BoxWidth)
+		}
+		
+		// Display summary
+		summaryMsg := fmt.Sprintf("%d total tracks, %d languages, %d forced, %d default", 
+			subtitleCount, len(languageSet), forcedCount, defaultCount)
+		visibleLen := 2 + len(summaryMsg) // "│ " + message
+		padding := format.BoxWidth - visibleLen // No -1 needed for proper alignment
+		format.BorderColor.Print("│ ")
+		format.InfoColor.Print(summaryMsg)
+		if padding > 0 {
+			fmt.Print(strings.Repeat(" ", padding))
+		}
+		format.BorderColor.Println(" │")
 	}
 	
 	format.DrawBoxBottom(format.BoxWidth)
