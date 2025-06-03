@@ -179,8 +179,18 @@ func PrintTrackInfo(trackNum int, language, trackName, codecType string, forced,
 	PrintTrackInfoWithType(trackNum, "", language, trackName, codecType, forced, defaultTrack)
 }
 
+// PrintTrackInfoWithLanguageName prints formatted track information with full language name
+func PrintTrackInfoWithLanguageName(trackNum int, language, languageName, trackName, codecType string, forced, defaultTrack bool) {
+	PrintTrackInfoWithTypeAndLanguageName(trackNum, "", language, languageName, trackName, codecType, forced, defaultTrack)
+}
+
 // PrintTrackInfoWithType prints formatted track information with type-specific colors
 func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecType string, forced, defaultTrack bool) {
+	PrintTrackInfoWithTypeAndLanguageName(trackNum, trackType, language, "", trackName, codecType, forced, defaultTrack)
+}
+
+// PrintTrackInfoWithTypeAndLanguageName prints formatted track information with type-specific colors and full language name
+func PrintTrackInfoWithTypeAndLanguageName(trackNum int, trackType, language, languageName, trackName, codecType string, forced, defaultTrack bool) {
 	var trackColor *color.Color
 
 	// Choose color based on track type
@@ -208,7 +218,15 @@ func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecT
 	BaseFg.Print(language)
 	
 	// Calculate visible content length for first line
-	contentLen := 2 + 2 + 6 + len(fmt.Sprint(trackNum)) + 3 + len(language) // "│ " + "█ " + "Track " + num + " • " + lang
+	contentLen := 2 + 2 + 6 + len(fmt.Sprint(trackNum)) + 3 + len(language) // "│ " + "▪ " + "Track " + num + " • " + lang
+	
+	// Add full language name if provided
+	if languageName != "" && languageName != language {
+		BaseDim.Print(" (")
+		BaseAccent.Print(languageName)
+		BaseDim.Print(")")
+		contentLen += 3 + len(languageName) // " (" + name + ")"
+	}
 	
 	if trackName != "" {
 		BaseDim.Print(" • ")

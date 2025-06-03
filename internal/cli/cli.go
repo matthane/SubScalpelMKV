@@ -219,12 +219,16 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 				codecType = strings.ToUpper(ext)
 			}
 
+			// Get the full language name
+			languageName := model.GetLanguageName(track.Properties.Language)
+
 			// For simple SUP tracks without attributes, we need to print codec on second line
 			if !track.Properties.Forced && !track.Properties.Default && codecType != "" {
 				// Print track info without codec (it will be on second line)
-				format.PrintTrackInfo(
+				format.PrintTrackInfoWithLanguageName(
 					track.Properties.Number,
 					track.Properties.Language,
+					languageName,
 					track.Properties.TrackName,
 					"", // Empty codec - we'll print it separately
 					track.Properties.Forced,
@@ -242,9 +246,10 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 				format.BorderColor.Println(" │")
 			} else {
 				// Normal display with attributes
-				format.PrintTrackInfo(
+				format.PrintTrackInfoWithLanguageName(
 					track.Properties.Number,
 					track.Properties.Language,
+					languageName,
 					track.Properties.TrackName,
 					codecType,
 					track.Properties.Forced,
