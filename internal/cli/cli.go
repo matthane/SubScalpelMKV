@@ -292,8 +292,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 	} else {
 		// Calculate summary statistics
 		languageSet := make(map[string]bool)
-		forcedCount := 0
-		defaultCount := 0
+		formatSet := make(map[string]bool)
 		
 		for _, track := range mkvInfo.Tracks {
 			if track.Type == "subtitles" {
@@ -302,14 +301,9 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 					languageSet[track.Properties.Language] = true
 				}
 				
-				// Count forced tracks
-				if track.Properties.Forced {
-					forcedCount++
-				}
-				
-				// Count default tracks
-				if track.Properties.Default {
-					defaultCount++
+				// Track unique formats
+				if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
+					formatSet[strings.ToUpper(ext)] = true
 				}
 			}
 		}
@@ -320,8 +314,23 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 		}
 		
 		// Display summary
-		summaryMsg := fmt.Sprintf("%d total tracks, %d languages, %d forced, %d default", 
-			subtitleCount, len(languageSet), forcedCount, defaultCount)
+		trackWord := "tracks"
+		if subtitleCount == 1 {
+			trackWord = "track"
+		}
+		
+		languageWord := "languages"
+		if len(languageSet) == 1 {
+			languageWord = "language"
+		}
+		
+		formatWord := "formats"
+		if len(formatSet) == 1 {
+			formatWord = "format"
+		}
+		
+		summaryMsg := fmt.Sprintf("%d total %s, %d %s, %d %s", 
+			subtitleCount, trackWord, len(languageSet), languageWord, len(formatSet), formatWord)
 		visibleLen := 2 + len(summaryMsg) // "│ " + message
 		padding := format.BoxWidth - visibleLen // No -1 needed for proper alignment
 		format.BorderColor.Print("│ ")
