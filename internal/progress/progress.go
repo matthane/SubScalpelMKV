@@ -48,9 +48,7 @@ func ShowProgressBar(percentage int) {
 	lastPercent = percentage
 
 	if percentage >= 100 {
-		elapsed := time.Since(startTime)
 		fmt.Printf("\n")
-		format.PrintProgressComplete(fmt.Sprintf("Complete! Elapsed time: %s", formatDuration(elapsed)))
 	}
 }
 

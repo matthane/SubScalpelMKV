@@ -45,11 +45,8 @@ func AskTrackSelection() string {
 	reader := bufio.NewReader(os.Stdin)
 
 	format.PrintSubSection("Track Selection")
-	format.PrintInfo("Enter language codes, track IDs, and/or subtitle formats separated by commas:")
-	format.PrintExample("'eng,spa,fre' or '14,16,18' or 'srt,ass,sup' or 'eng,14,srt'")
-	format.PrintInfo("Language codes: 2-letter (en,es) or 3-letter (eng,spa)")
-	format.PrintInfo("Track IDs: Use the track IDs shown above")
-	format.PrintInfo("Subtitle formats: srt, ass, ssa, sup, sub, vtt, usf, etc.")
+	format.PrintInfo("Enter selection (comma-separated):")
+	format.PrintExample("Language: eng,spa,fre  •  Track ID: 14,16,18  •  Format: srt,ass,sup  •  Mixed: eng,14,srt")
 	format.PrintPrompt("Selection: ")
 
 	input, err := reader.ReadString('\n')

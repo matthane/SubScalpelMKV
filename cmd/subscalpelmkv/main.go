@@ -55,7 +55,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	}
 
 	// Step 0: Get original track information to preserve track numbers
-	format.PrintInfo("Analyzing original file...")
 	originalMkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error analyzing original file: %v", err))
@@ -81,7 +80,6 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	defer mkv.CleanupTempFile(mksFileName)
 
 	// Step 2: Get track information from the temporary .mks file
-	format.PrintStep(2, "Analyzing subtitle tracks...")
 	mkvInfo, err := mkv.GetTrackInfo(mksFileName)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error analyzing subtitle tracks: %v", err))
@@ -89,8 +87,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 	}
 	fmt.Println()
 
-	// Step 3: Extract subtitles
-	format.PrintStep(3, "Extracting subtitle tracks...")
+	// Step 2: Extract subtitles
+	format.PrintStep(2, "Extracting subtitle tracks...")
 
 	var jobs []model.ExtractionJob
 	mksTrackIndex := 0
