@@ -66,7 +66,7 @@ Drag an MKV file onto the executable for interactive mode:
 ./subscalpelmkv -x "path/to/video.mkv"
 ```
 
-#### Subtitle Track Selection (**ADDITIVE FILTERING**)
+#### Subtitle Track Selection With Additive Filtering
 ```sh
 # Single language
 ./subscalpelmkv -x "path/to/video.mkv" -s eng
@@ -121,11 +121,13 @@ Drag an MKV file onto the executable for interactive mode:
 | `--output-dir` | `-o` | Custom output directory (automatically created if it doesn't exist, default: same as input file) |
 | `--format` | `-f` | Custom filename template with placeholders |
 
-#### Supported Language Codes
-- **2-letter (ISO 639-1)**: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`, `ar`, `hi`, `th`, `vi`, `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `cs`, `hu`, `ro`, `bg`, `hr`, `sk`, `sl`, `et`, `lv`, `lt`, `el`
-- **3-letter (ISO 639-2)**: `eng`, `spa`, `fre`, `ger`, `ita`, `por`, `rus`, `jpn`, `kor`, `chi`, `ara`, `hin`, `tha`, `vie`, `tur`, `pol`, `dut`, `swe`, `dan`, `nor`, `fin`, `cze`, `hun`, `rum`, `bul`, `hrv`, `slo`, `slv`, `est`, `lav`, `lit`, `gre`
+#### Language Code Support
 
-The tool will extract subtitle tracks from `example.mkv` and save them with appropriate file names based on track properties. When using track selection, only tracks matching the specified language codes, track numbers, or subtitle formats will be extracted.
+SubScalpelMKV supports comprehensive ISO language codes:
+- **ISO 639-1**: All standard 2-letter language codes (e.g., `en`, `es`, `fr`, `de`, `ja`, `zh`)
+- **ISO 639-2/B**: All standard 3-letter bibliographic codes (e.g., `eng`, `spa`, `fre`, `ger`, `jpn`, `chi`)
+
+The tool automatically handles both formats and displays the full language name in track listings for clarity. This ensures compatibility with subtitles in virtually any language found in MKV files.
 
 ### Output File Naming
 
