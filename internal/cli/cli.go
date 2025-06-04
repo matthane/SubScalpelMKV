@@ -185,6 +185,7 @@ func ShowHelp() {
   -f, --format <template>    Custom filename template with placeholders:
                              {basename}, {language}, {trackno}, {trackname},
                              {forced}, {default}, {extension}
+  -d, --dry-run              Show what would be extracted without performing extraction
   -h, --help                 Show this help message`)
 
 	format.PrintUsageSection("Examples", "")
@@ -202,6 +203,7 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv -o ./subtitles")
 	format.PrintExample("subscalpelmkv -x video.mkv -o")
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng --dry-run")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
 
 	format.PrintUsageSection("Default filename template", `  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}`)
@@ -350,7 +352,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 // HandleDragAndDropMode handles the interactive drag-and-drop mode (backward compatibility)
 func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, string, bool) error) error {
 	// Create a wrapper function that adds default output config
-	wrapperFunc := func(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
+	wrapperFunc := func(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 		return processFileFunc(inputFileName, languageFilter, showFilterMessage)
 	}
 
@@ -364,7 +366,7 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 }
 
 // HandleDragAndDropModeWithConfig handles the interactive drag-and-drop mode with output configuration
-func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig) error, outputConfig model.OutputConfig) error {
+func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig, bool) error, outputConfig model.OutputConfig) error {
 	format.PrintInfo(fmt.Sprintf("Processing file: %s", inputFileName))
 
 	// Get track information to show available subtitle tracks
@@ -437,7 +439,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	}
 	fmt.Println()
 
-	err = processFileFunc(inputFileName, languageFilter, false, outputConfig)
+	err = processFileFunc(inputFileName, languageFilter, false, outputConfig, false)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
 		fmt.Println("Press Enter to exit...")
@@ -510,7 +512,7 @@ func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 		} else {
 			// Display normal files
 			format.BorderColor.Print("│ ")
-			format.SubtitleTrackColor.Print("▪")
+			format.BaseHighlight.Print("▪")
 			fmt.Print(" ")
 			format.BaseFg.Print(fileInfo.FileName)
 			

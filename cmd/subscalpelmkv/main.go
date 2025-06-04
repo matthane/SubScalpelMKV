@@ -23,7 +23,7 @@ const (
 )
 
 // processFile handles the actual subtitle extraction logic
-func processFile(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
+func processFile(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 	var selection model.TrackSelection
 	if languageFilter != "" {
 		selection = cli.ParseTrackSelection(languageFilter)
@@ -70,6 +70,52 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		if track.Type == "subtitles" && util.MatchesTrackSelection(track, selection) {
 			selectedOriginalTracks = append(selectedOriginalTracks, track)
 		}
+	}
+
+	// For dry run mode, show what would be extracted without actually doing it
+	if dryRun {
+		if len(selectedOriginalTracks) == 0 {
+			format.PrintWarning("No subtitle tracks match the selection criteria")
+			return nil
+		}
+
+		format.PrintSubSection("Dry Run - Would Extract")
+		format.PrintInfo(fmt.Sprintf("Would extract %d track(s) from: %s", len(selectedOriginalTracks), filepath.Base(inputFileName)))
+		fmt.Println()
+
+		for _, track := range selectedOriginalTracks {
+			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, track, outputConfig)
+			
+			// Get codec type for display
+			codecType := "Unknown"
+			if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
+				codecType = strings.ToUpper(ext)
+			}
+			
+			// Build track details string
+			trackDetails := fmt.Sprintf("Track %d (%s)", track.Properties.Number, track.Properties.Language)
+			if track.Properties.TrackName != "" {
+				trackDetails += fmt.Sprintf(" - %s", track.Properties.TrackName)
+			}
+			
+			// Add format and attributes
+			attributes := []string{codecType}
+			if track.Properties.Forced {
+				attributes = append(attributes, "forced")
+			}
+			if track.Properties.Default {
+				attributes = append(attributes, "default")
+			}
+			
+			format.BorderColor.Print("  ")
+			format.BaseHighlight.Print("▪")
+			fmt.Print(" ")
+			format.BaseFg.Println(fmt.Sprintf("%s [%s]", trackDetails, strings.Join(attributes, ", ")))
+			format.PrintExample(fmt.Sprintf("    → %s", outFileName))
+			fmt.Println()
+		}
+
+		return nil
 	}
 
 	// Step 1: Create .mks file with only selected subtitle tracks
@@ -127,7 +173,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 }
 
 // processBatch handles batch processing of multiple MKV files
-func processBatch(pattern, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig) error {
+func processBatch(pattern, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 	files, err := filepath.Glob(pattern)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Invalid glob pattern: %v", err))
@@ -181,7 +227,7 @@ func processBatch(pattern, languageFilter string, showFilterMessage bool, output
 	for i, file := range mkvFiles {
 		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(mkvFiles), filepath.Base(file)))
 		
-		err := processFile(file, languageFilter, false, outputConfig)
+		err := processFile(file, languageFilter, false, outputConfig, dryRun)
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
 			errorCount++
@@ -331,7 +377,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	for i, file := range validFiles {
 		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(validFiles), filepath.Base(file)))
 		
-		err := processFile(file, languageFilter, false, outputConfig)
+		err := processFile(file, languageFilter, false, outputConfig, false)
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
 			errorCount++
@@ -529,6 +575,7 @@ func main() {
 		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track IDs (e.g., 'eng,14,spa,16')"`
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
+		DryRun         bool   `short:"d" long:"dry-run" description:"Show what would be extracted without performing extraction"`
 	}{}
 
 	_, cmdErr := gocmd.New(gocmd.Options{
@@ -571,7 +618,7 @@ func main() {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
 
-		err := processFile(inputFileName, selectionFilter, true, outputConfig)
+		err := processFile(inputFileName, selectionFilter, true, outputConfig, flags.DryRun)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
@@ -595,7 +642,7 @@ func main() {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
 
-		err := processBatch(pattern, selectionFilter, true, outputConfig)
+		err := processBatch(pattern, selectionFilter, true, outputConfig, flags.DryRun)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}

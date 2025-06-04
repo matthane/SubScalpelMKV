@@ -12,6 +12,7 @@
   - Other: KATE, HDMV/TEXTST
 - Track selection by language codes, track numbers, or format types
 - Customizable output directories and filename templates
+- Dry run mode to preview extraction without creating files
 - Interactive drag-and-drop mode
 - Command-line interface
 
@@ -134,6 +135,25 @@ Batch processing filters to `.mkv` files only and continues processing remaining
 ./subscalpelmkv -x "path/to/video.mkv" -s eng,3,srt,sup
 ```
 
+#### Dry Run Mode
+Preview what subtitles would be extracted without performing the actual extraction:
+
+```sh
+# Preview extraction for specific language
+./subscalpelmkv -x "path/to/video.mkv" -s eng --dry-run
+
+# Preview batch processing
+./subscalpelmkv -b "*.mkv" -s eng,spa --dry-run
+
+# Preview with custom output template
+./subscalpelmkv -x "path/to/video.mkv" -s eng -f "{basename}-{language}.{extension}" --dry-run
+```
+
+Dry run mode displays:
+- Number of tracks that would be extracted
+- Track details (number, language, name, format, attributes)
+- Output filename that would be created
+
 #### Output Control
 ```sh
 # Custom output directory (automatically created if it doesn't exist)
@@ -171,6 +191,7 @@ Batch processing filters to `.mkv` files only and continues processing remaining
 |--------|-------|-------------|
 | `--output-dir` | `-o` | Custom output directory, or when used without arguments, auto-create `{basename}-subtitles` directory in input file's location (automatically created if it doesn't exist, default: same as input file) |
 | `--format` | `-f` | Custom filename template with placeholders |
+| `--dry-run` | `-d` | Preview what would be extracted without performing extraction |
 
 #### Language Code Support
 
