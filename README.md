@@ -1,398 +1,359 @@
 # SubScalpelMKV
 
-`subscalpelmkv` is a cross-platform command-line tool written in Go for extracting subtitle tracks from MKV files. It uses MKVToolNix for the extraction operations and supports both interactive and command-line modes.
+A cross-platform command-line tool for extracting subtitle tracks from MKV files using MKVToolNix.
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Building from Source](#building-from-source)
+- [Usage](#usage)
+  - [Interactive Mode](#interactive-mode)
+  - [Command Line Mode](#command-line-mode)
+  - [Batch Processing](#batch-processing)
+  - [Dry Run Mode](#dry-run-mode)
+- [Track Selection](#track-selection)
+  - [Selection Methods](#selection-methods)
+  - [Exclusion Filters](#exclusion-filters)
+  - [Language Codes](#language-codes)
+- [Output Configuration](#output-configuration)
+  - [Output Directory](#output-directory)
+  - [Filename Templates](#filename-templates)
+- [Configuration Files](#configuration-files)
+  - [File Locations](#file-locations)
+  - [Configuration Format](#configuration-format)
+  - [Using Profiles](#using-profiles)
+- [Command Reference](#command-reference)
+- [Examples](#examples)
+  - [Basic Examples](#basic-examples)
+  - [Advanced Examples](#advanced-examples)
+- [Supported Formats](#supported-formats)
+- [License](#license)
+- [Contributing](#contributing)
+- [Acknowledgements](#acknowledgements)
 
 ## Features
 
-- Extract subtitle tracks from MKV files using MKVToolNix
-- Batch processing with glob patterns for multiple files
-- Subtitle format support:
-  - Text-based: SRT, ASS, SSA, WebVTT, USF, TXT
-  - Image-based: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
-  - Other: KATE, HDMV/TEXTST
-- Track selection by language codes, track numbers, or format types
-- Track exclusion filters to exclude specific tracks from selection
-- Customizable output directories and filename templates
-- Dry run mode to preview extraction without creating files
-- Configuration file support with named profiles
-- Interactive drag-and-drop mode
-- Command-line interface
+- **Multiple input methods**: Interactive drag-and-drop, command-line interface, batch processing
+- **Flexible track selection**: By language code, track number, or subtitle format
+- **Track exclusion**: Filter out unwanted tracks from selection
+- **Batch processing**: Process multiple files with glob patterns
+- **Custom output**: Configurable output directories and filename templates
+- **Configuration profiles**: Save common settings for repeated use
+- **Dry run mode**: Preview operations before execution
+- **Cross-platform**: Works on Windows, macOS, and Linux
 
-## Requirements
+## Quick Start
 
-- Go 1.16 or later
-- `mkvmerge` and `mkvextract` tools from the MKVToolNix package
-- `gocmd` library
+```sh
+# Extract all subtitle tracks from a single file
+./subscalpelmkv -x movie.mkv
+
+# Extract English subtitles only
+./subscalpelmkv -x movie.mkv -s eng
+
+# Extract from multiple files
+./subscalpelmkv -b "*.mkv" -s eng,spa
+
+# Preview what would be extracted
+./subscalpelmkv -x movie.mkv -s eng --dry-run
+```
 
 ## Installation
 
-1. Install Go from [golang.org](https://golang.org/dl/)
+### Requirements
 
-2. Install MKVToolNix from [mkvtoolnix.download](https://mkvtoolnix.download/)
-    - Add to PATH system environment variables
+- Go 1.16 or later
+- MKVToolNix (`mkvmerge` and `mkvextract`)
 
-3. Clone the repository and navigate to the project directory:
+### Building from Source
 
-    ```sh
-    git clone https://github.com/matthane/subscalpelmkv.git
-    cd subscalpelmkv
-    ```
-4. Build the project:
+1. Install [Go](https://golang.org/dl/) and [MKVToolNix](https://mkvtoolnix.download/)
+   
+2. Clone and build:
+   ```sh
+   git clone https://github.com/matthane/subscalpelmkv.git
+   cd subscalpelmkv
+   go build -o subscalpelmkv cmd/subscalpelmkv/main.go
+   
+   # For Windows
+   go build -o subscalpelmkv.exe cmd/subscalpelmkv/main.go
+   ```
 
-    ```sh
-    go build -o subscalpelmkv cmd/subscalpelmkv/main.go
-
-    # For Windows
-    go build -o subscalpelmkv.exe cmd/subscalpelmkv/main.go
-    ```
+3. Ensure MKVToolNix is in your PATH
 
 ## Usage
 
-### Drag-and-Drop Mode
+### Interactive Mode
 
-#### Single File Drag-and-Drop
-Drag an MKV file onto the executable for interactive mode:
+Drag an MKV file, multiple files, or a directory onto the executable:
 
-1. The tool analyzes the file and displays available subtitle tracks
-2. Choose to extract all tracks or make a custom selection
-3. For custom selection, enter:
-    - Language codes: `eng,spa,fre`
-    - Track numbers: `3,5,7`
-    - Subtitle formats: `srt,ass,sup`
-    - Mixed selection: `eng,3,srt,sup`
-4. Optionally specify exclusions to remove specific tracks from your selection:
-    - Exclude languages: `chi,kor`
-    - Exclude track numbers: `15,17`
-    - Exclude formats: `sup,sub`
-    - Mixed exclusions: `chi,15,sup`
+1. **Single file**: Interactive track selection
+2. **Multiple files**: Batch processing with shared settings
+3. **Directory**: Recursive processing of all MKV files
 
-#### Multi-File Drag-and-Drop
-Drag multiple MKV files onto the executable for batch processing:
-
-1. Detects when multiple MKV files are provided
-2. Shows all files that will be processed
-3. Apply the same track selection to all files
-4. Shows progress for each file
-5. Displays processing summary
-
-Multi-file processing continues with remaining files if one fails.
-
-#### Directory Drag-and-Drop
-Drag a folder onto the executable to process all MKV files within it:
-
-1. Recursively scans the directory for all MKV files
-2. Shows all found MKV files that will be processed
-3. Apply the same track selection to all files
-4. Shows progress for each file
-5. Displays processing summary
-
-You can also drag multiple folders and files together - the tool will collect all MKV files from both individual files and directories.
+The interactive mode guides you through:
+- Viewing available subtitle tracks
+- Selecting tracks by language, number, or format
+- Specifying output preferences
+- Applying exclusion filters
 
 ### Command Line Mode
 
-#### Basic Usage
 ```sh
-# Extract all subtitle tracks
-./subscalpelmkv -x "path/to/video.mkv"
+# Basic extraction
+./subscalpelmkv -x video.mkv
+
+# With track selection
+./subscalpelmkv -x video.mkv -s eng,spa
+
+# With output directory
+./subscalpelmkv -x video.mkv -o ./subtitles
+
+# Show track information
+./subscalpelmkv -i video.mkv
 ```
 
-#### Batch Processing
-Process multiple MKV files at once using glob patterns:
+### Batch Processing
+
+Process multiple files using glob patterns:
 
 ```sh
-# Process all MKV files in current directory
+# All MKV files in current directory
 ./subscalpelmkv -b "*.mkv" -s eng
 
-# Process all episodes in a season folder
-./subscalpelmkv -b "Season 1/*.mkv" -s eng,spa
+# Files in subdirectory
+./subscalpelmkv -b "Season1/*.mkv" -s eng,spa
 
-# Process files in a specific path
-./subscalpelmkv -b "/path/to/movies/*.mkv" -s eng
-
-# Batch process with auto-created {basename}-subtitles directories
-./subscalpelmkv -b "*.mkv" -s eng,spa -o
-
-# Batch process with custom output directory
-./subscalpelmkv -b "*.mkv" -s eng,spa -o ./subtitles
-
-# Batch process with custom filename template
-./subscalpelmkv -b "Season 1/*.mkv" -s eng -f "{basename}-{language}.{extension}"
+# With custom output template
+./subscalpelmkv -b "*.mkv" -s eng -f "{basename}-{language}.{extension}"
 ```
 
-Batch processing filters to `.mkv` files only and continues processing remaining files if one fails.
+### Dry Run Mode
 
-#### Subtitle Track Selection With Additive Filtering
-```sh
-# Single language
-./subscalpelmkv -x "path/to/video.mkv" -s eng
-
-# Multiple languages
-./subscalpelmkv -x "path/to/video.mkv" -s eng,spa,fre
-
-# Specific track numbers
-./subscalpelmkv -x "path/to/video.mkv" -s 1,3,5
-
-# Subtitle format filtering
-./subscalpelmkv -x "path/to/video.mkv" -s srt,ass
-
-# Extract only image-based subtitles
-./subscalpelmkv -x "path/to/video.mkv" -s sup
-
-# Mixed selection: languages, track numbers, and formats
-./subscalpelmkv -x "path/to/video.mkv" -s eng,3,srt,sup
-```
-
-#### Track Exclusion Filters
-Exclude specific tracks from your selection using the `-e` flag. Exclusions are applied after selections and take precedence:
+Preview extraction without creating files:
 
 ```sh
-# Exclude specific languages
-./subscalpelmkv -x "path/to/video.mkv" -e chi,kor
-
-# Exclude specific track numbers
-./subscalpelmkv -x "path/to/video.mkv" -e 15,17
-
-# Exclude specific formats (useful for avoiding image-based subtitles)
-./subscalpelmkv -x "path/to/video.mkv" -e sup,sub
-
-# Select English and Spanish, but exclude SUP format
-./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -e sup
-
-# Select all tracks except Chinese and track 15
-./subscalpelmkv -x "path/to/video.mkv" -e chi,15
-
-# Mixed exclusions: languages, track numbers, and formats
-./subscalpelmkv -x "path/to/video.mkv" -s eng,spa,fre -e chi,15,sup
+./subscalpelmkv -x video.mkv -s eng --dry-run
 ```
 
-#### Dry Run Mode
-Preview what subtitles would be extracted without performing the actual extraction:
+Displays:
+- Number of tracks to extract
+- Track details (number, language, format)
+- Output filenames
+
+## Track Selection
+
+### Selection Methods
+
+Select tracks using any combination of:
+
+- **Language codes**: `eng`, `spa`, `fre` (2 or 3 letter ISO codes)
+- **Track numbers**: `1`, `3`, `5`
+- **Subtitle formats**: `srt`, `ass`, `sup`
 
 ```sh
-# Preview extraction for specific language
-./subscalpelmkv -x "path/to/video.mkv" -s eng --dry-run
+# Language selection
+./subscalpelmkv -x video.mkv -s eng,spa
 
-# Preview batch processing
-./subscalpelmkv -b "*.mkv" -s eng,spa --dry-run
+# Track number selection
+./subscalpelmkv -x video.mkv -s 1,3,5
 
-# Preview with custom output template
-./subscalpelmkv -x "path/to/video.mkv" -s eng -f "{basename}-{language}.{extension}" --dry-run
+# Format selection
+./subscalpelmkv -x video.mkv -s srt,ass
+
+# Mixed selection
+./subscalpelmkv -x video.mkv -s eng,3,srt
 ```
 
-Dry run mode displays:
-- Number of tracks that would be extracted
-- Track details (number, language, name, format, attributes)
-- Output filename that would be created
+### Exclusion Filters
 
-#### Output Control
+Exclude specific tracks using `-e`:
+
 ```sh
-# Custom output directory (automatically created if it doesn't exist)
-./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles
+# Exclude languages
+./subscalpelmkv -x video.mkv -e chi,kor
 
-# Auto-create {basename}-subtitles directory in input file's directory
-./subscalpelmkv -x "path/to/video.mkv" -o
+# Exclude formats
+./subscalpelmkv -x video.mkv -e sup,sub
 
-# Custom filename template
-./subscalpelmkv -x "path/to/video.mkv" -f "{basename}-{language}.{extension}"
-
-# Combined: custom directory, template, and track selection
-./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -o ./subs -f "{language}-{trackno}.{extension}"
+# Select English but exclude image-based formats
+./subscalpelmkv -x video.mkv -s eng -e sup,sub
 ```
 
-#### Info Flag Usage
+### Language Codes
+
+Supports both ISO 639-1 (2-letter) and ISO 639-2/B (3-letter) codes:
+- English: `en` or `eng`
+- Spanish: `es` or `spa` 
+- French: `fr` or `fre`
+- German: `de` or `ger`
+- Japanese: `ja` or `jpn`
+- Chinese: `zh` or `chi`
+
+## Output Configuration
+
+### Output Directory
+
+Control where subtitle files are saved:
+
 ```sh
-# Show information about available subtitle tracks
-./subscalpelmkv -i "path/to/video.mkv"
+# Same directory as input (default)
+./subscalpelmkv -x video.mkv
+
+# Auto-create {basename}-subtitles directory
+./subscalpelmkv -x video.mkv -o
+
+# Custom directory
+./subscalpelmkv -x video.mkv -o ./subtitles
 ```
 
-#### Command Line Options
+### Filename Templates
 
-##### Selection Options
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--extract` | `-x` | Path to MKV file (required) |
-| `--batch` | `-b` | Extract subtitles from multiple MKV files using glob pattern (e.g., '*.mkv', 'Season 1/*.mkv') |
-| `--select` | `-s` | Language codes, track numbers, subtitle formats, or any combination (comma-separated) |
-| `--exclude` | `-e` | Exclude specific tracks by language codes, track numbers, or formats (comma-separated) |
-| `--info` | `-i` | Show information about available subtitle tracks |
-| `--help` | `-h` | Show help message |
+Customize output filenames with placeholders:
 
-##### Output Options
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--output-dir` | `-o` | Custom output directory, or when used without arguments, auto-create `{basename}-subtitles` directory in input file's location (automatically created if it doesn't exist, default: same as input file) |
-| `--format` | `-f` | Custom filename template with placeholders |
-| `--dry-run` | `-d` | Preview what would be extracted without performing extraction |
-| `--config` | `-c` | Use default configuration profile |
-| `--profile` | `-p` | Use named configuration profile |
+| Placeholder | Description |
+|------------|-------------|
+| `{basename}` | Original filename without extension |
+| `{language}` | Track language code |
+| `{trackno}` | Track number (zero-padded) |
+| `{trackname}` | Track name (if available) |
+| `{forced}` | "forced" for forced tracks |
+| `{default}` | "default" for default tracks |
+| `{extension}` | File extension |
 
-#### Language Code Support
+```sh
+# Simple: movie-eng.srt
+-f "{basename}-{language}.{extension}"
 
-Supports ISO 639-1 (2-letter) and ISO 639-2/B (3-letter) language codes:
-- 2-letter: `en`, `es`, `fr`, `de`, `ja`, `zh`, and more
-- 3-letter: `eng`, `spa`, `fre`, `ger`, `jpn`, `chi`, and more
+# With track number: movie.001.eng.srt
+-f "{basename}.{trackno}.{language}.{extension}"
 
-### Configuration Files
+# Organized by language: eng/movie.srt
+-f "{language}/{basename}.{extension}"
+```
 
-SubScalpelMKV supports configuration files to set default options and create named profiles for different use cases. This eliminates the need to specify the same options repeatedly.
+## Configuration Files
 
-#### Configuration File Locations
+### File Locations
 
-Configuration files are searched in this order (first found is used):
+Configuration files are searched in order:
 
-1. **Current directory**: `./subscalpelmkv.yaml`
-2. **OS-specific config directory**:
-   - **Linux/macOS**: `~/.config/subscalpelmkv/config.yaml`
-   - **Windows**: `%APPDATA%\subscalpelmkv\config.yaml`
-3. **Home directory**: `~/.subscalpelmkv.yaml`
+1. `./subscalpelmkv.yaml` (current directory)
+2. **Linux/macOS**: `~/.config/subscalpelmkv/config.yaml`
+3. **Windows**: `%APPDATA%\subscalpelmkv\config.yaml`
+4. `~/.subscalpelmkv.yaml` (home directory)
 
-#### Configuration Format
-
-Configuration files use YAML format with the following structure:
+### Configuration Format
 
 ```yaml
-# Default settings applied when using --config
+# Default settings
 default_languages: [eng, spa]
 default_exclusions: [chi, kor]
 output_template: "{basename}.{language}.{trackno}.{extension}"
 output_dir: "./subtitles"
 
-# Named profiles for different use cases
+# Named profiles
 profiles:
   anime:
     languages: [jpn, eng]
     exclusions: [chi, kor]
     output_template: "{basename}/{language}.{extension}"
-    output_dir: "./anime_subs"
     
   movies:
     languages: [eng]
     exclusions: [sup, sub]
     output_template: "{basename}-{language}.{extension}"
-    output_dir: "./movie_subs"
-    
-  multilang:
-    languages: [eng, spa, fre, ger]
-    exclusions: [chi, jpn, kor]
-    output_template: "{basename}/{language}/{trackname}.{extension}"
-    output_dir: "./multi_subs"
 ```
 
-#### Configuration Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `default_languages` | Array | Default language codes to extract |
-| `default_exclusions` | Array | Default language codes, track numbers, or formats to exclude |
-| `output_template` | String | Default filename template |
-| `output_dir` | String | Default output directory |
-| `profiles` | Object | Named configuration profiles |
-
-Each profile can contain:
-- `languages`: Array of language codes to select
-- `exclusions`: Array of language codes, track numbers, or formats to exclude
-- `output_template`: Custom filename template
-- `output_dir`: Custom output directory
-
-#### Using Configuration
+### Using Profiles
 
 ```sh
-# Use default configuration settings
+# Use default configuration
 ./subscalpelmkv -x video.mkv --config
 
-# Use a named profile
+# Use named profile
 ./subscalpelmkv -x video.mkv --profile anime
 
-# CLI flags override config settings
+# Override profile settings
 ./subscalpelmkv -x video.mkv --profile anime -s eng
-
-# Batch processing with configuration
-./subscalpelmkv -b "*.mkv" --profile movies
-
-# Dry run with configuration
-./subscalpelmkv -x video.mkv --profile anime --dry-run
 ```
 
-#### Configuration Priority
+## Command Reference
 
-Settings are applied in this order (later values override earlier ones):
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--extract` | `-x` | Extract subtitles from MKV file |
+| `--batch` | `-b` | Process multiple files with glob pattern |
+| `--select` | `-s` | Select tracks (languages/numbers/formats) |
+| `--exclude` | `-e` | Exclude tracks (languages/numbers/formats) |
+| `--info` | `-i` | Display track information |
+| `--output-dir` | `-o` | Output directory (or auto-create with no args) |
+| `--format` | `-f` | Filename template |
+| `--dry-run` | `-d` | Preview without extraction |
+| `--config` | `-c` | Use default configuration |
+| `--profile` | `-p` | Use named profile |
+| `--help` | `-h` | Show help |
 
-1. Built-in defaults
-2. Configuration file defaults
-3. Named profile settings (if `--profile` is used)
-4. Command-line flags
+## Examples
 
-This means CLI flags always take precedence over configuration settings.
+### Basic Examples
 
-### Output File Naming
-
-#### Default Naming Pattern
-By default, output files are named using the pattern:
-```
-<original_filename>.<language>.<track_number>[.track_name][.forced][.default].<extension>
-```
-
-Examples:
-- `movie.eng.001.srt` - English SRT subtitle, track 1
-- `movie.spa.002.ass` - Spanish ASS subtitle, track 2
-- `movie.eng.003.forced.sup` - English forced SUP subtitle, track 3
-- `movie.fre.004.default.vtt` - French default WebVTT subtitle, track 4
-- `movie.ger.005.sub` - German VOBSUB subtitle, track 5 (creates .idx and .sub files)
-
-#### Custom Filename Templates
-You can customize the output filename format using the `-f` flag with placeholders:
-
-**Available Placeholders:**
-- `{basename}` - Original filename without extension
-- `{language}` - Track language code (e.g., "eng", "spa")
-- `{trackno}` - Track number (3-digit padded, e.g., "001", "042")
-- `{trackname}` - Track name (if available)
-- `{forced}` - "forced" if track is forced, empty otherwise
-- `{default}` - "default" if track is default, empty otherwise
-- `{extension}` - Subtitle file extension (srt, ass, ssa, vtt, usf, sup, sub, bmp, kate, txt)
-
-**Template Examples:**
 ```sh
-# Simple format: movie-eng.srt
--f "{basename}-{language}.{extension}"
+# Extract all subtitles
+./subscalpelmkv -x movie.mkv
 
-# Include track numbers: eng-001.srt
--f "{language}-{trackno}.{extension}"
+# Extract specific language
+./subscalpelmkv -x movie.mkv -s eng
 
-# Detailed format: movie.english.track001.srt
--f "{basename}.{language}.track{trackno}.{extension}"
+# Extract multiple languages
+./subscalpelmkv -x movie.mkv -s eng,spa,fre
 
-# Include forced/default flags: movie.forced.srt
--f "{basename}.{forced}.{extension}"
+# Extract to custom directory
+./subscalpelmkv -x movie.mkv -o ./subs
 ```
 
-#### Output Directory Control
-- **Default**: Files are saved in the same directory as the input MKV file
-- **Auto-create Directory**: Use `-o` without arguments to create a `{basename}-subtitles` directory in the same location as the input file
-- **Custom Directory**: Use `-o <directory>` to specify a different output directory (automatically created if it doesn't exist)
+### Advanced Examples
 
-**Directory Examples:**
 ```sh
-# Default behavior - save in same directory as input file
-./subscalpelmkv -x path/to/video.mkv
-# Result: subtitles saved to path/to/
+# Batch process with auto-created directories
+./subscalpelmkv -b "*.mkv" -s eng -o
 
-# Auto-create {basename}-subtitles directory in input file's location
-./subscalpelmkv -x path/to/video.mkv -o
-# Result: subtitles saved to path/to/video-subtitles/
+# Extract text subtitles only (exclude image-based)
+./subscalpelmkv -x movie.mkv -s eng,spa -e sup,sub
 
-# Save to specific directory
-./subscalpelmkv -x path/to/video.mkv -o ./extracted-subtitles
-# Result: subtitles saved to ./extracted-subtitles/
+# Complex selection with custom naming
+./subscalpelmkv -x movie.mkv -s eng,spa,3,5 -e chi -f "{language}/{basename}.{extension}"
 
-# Organize by movie name
-./subscalpelmkv -x path/to/video.mkv -o "./subtitles/Movie Name"
-# Result: subtitles saved to ./subtitles/Movie Name/
+# Use configuration profile for anime
+./subscalpelmkv -b "Anime/*.mkv" --profile anime
 
-# Batch processing with auto-created {basename}-subtitles directories per file
-./subscalpelmkv -b "Season1/*.mkv" -o -s eng
-# Result: each file gets its own directory (e.g., Season1/episode01-subtitles/)
+# Dry run to preview batch operation
+./subscalpelmkv -b "Season1/*.mkv" -s eng,spa --dry-run
 ```
+
+## Supported Formats
+
+### Text-based Subtitles
+- SubRip (`.srt`)
+- Advanced SubStation Alpha (`.ass`)
+- SubStation Alpha (`.ssa`)
+- WebVTT (`.vtt`)
+- Universal Subtitle Format (`.usf`)
+- Plain text (`.txt`)
+
+### Image-based Subtitles
+- PGS/SUP (`.sup`)
+- VOBSUB (`.idx` + `.sub`)
+- DVB subtitles (`.sub`)
+- Bitmap (`.bmp`)
+
+### Other Formats
+- Kate streams (`.kate`)
+- HDMV TextST (`.txt`)
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE.md` file for details.
