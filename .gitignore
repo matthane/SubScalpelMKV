@@ -1,4 +1,5 @@
 *.exe
+/subscalpelmkv
 *.mkv
 *.sup
 *.srt
@@ -8,4 +9,3 @@
 *.sub
 *.md
 *.claude
-subscalpelmkv
