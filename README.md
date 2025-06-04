@@ -192,6 +192,7 @@ Supports both ISO 639-1 (2-letter) and ISO 639-2/B (3-letter) codes:
 - German: `de` or `ger`
 - Japanese: `ja` or `jpn`
 - Chinese: `zh` or `chi`
+- And more...
 
 ## Output Configuration
 
