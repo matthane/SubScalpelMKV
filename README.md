@@ -1,19 +1,19 @@
 # SubScalpelMKV
 
-`subscalpelmkv` is a cross-platform command-line tool written in Go for extracting subtitles from MKV files quickly and precisely. It is a fork/overhaul of [GMM MKV Subtitles Extract](https://github.com/rhaseven7h/gmmmkvsubsextract) with many new features for increased speed and capability.
+`subscalpelmkv` is a cross-platform command-line tool written in Go for extracting subtitle tracks from MKV files. It uses MKVToolNix for the extraction operations and supports both interactive and command-line modes.
 
 ## Features
 
 - Extract subtitle tracks from MKV files using MKVToolNix
-- **Batch processing**: Process multiple MKV files at once using glob patterns
-- Support for multiple subtitle formats:
-  - **Text-based**: SRT, ASS, SSA, WebVTT, USF, TXT
-  - **Image-based**: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
-  - **Other**: KATE, HDMV/TEXTST
-- Flexible track selection using language codes, track numbers, or any combination of both
-- Output control: custom directories and filename templates
-- Interactive mode via drag-and-drop
-- Command-line interface for scripting and automation
+- Batch processing with glob patterns for multiple files
+- Subtitle format support:
+  - Text-based: SRT, ASS, SSA, WebVTT, USF, TXT
+  - Image-based: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
+  - Other: KATE, HDMV/TEXTST
+- Track selection by language codes, track numbers, or format types
+- Customizable output directories and filename templates
+- Interactive drag-and-drop mode
+- Command-line interface
 
 ## Requirements
 
@@ -61,17 +61,13 @@ Drag an MKV file onto the executable for interactive mode:
 #### Multi-File Drag-and-Drop
 Drag multiple MKV files onto the executable for batch processing:
 
-1. **Automatic Detection**: The tool automatically detects when multiple MKV files are provided
-2. **File Listing**: Shows all files that will be processed
-3. **Unified Selection**: Choose to extract all tracks or make a custom selection that applies to all files
-4. **Progress Tracking**: Shows progress for each file (e.g., "Processing file 2/5")
-5. **Batch Summary**: Displays total files processed and success/failure counts
+1. Detects when multiple MKV files are provided
+2. Shows all files that will be processed
+3. Apply the same track selection to all files
+4. Shows progress for each file
+5. Displays processing summary
 
-**Multi-File Features:**
-- **Smart Detection**: Automatically distinguishes between multiple files and single files with spaces in names
-- **Same Interface**: Uses the same track selection interface as single-file mode
-- **Error Resilience**: Continues processing other files if one fails
-- **Consistent Output**: Each file's subtitles are saved using the same naming convention
+Multi-file processing continues with remaining files if one fails.
 
 ### Command Line Mode
 
@@ -94,6 +90,9 @@ Process multiple MKV files at once using glob patterns:
 # Process files in a specific path
 ./subscalpelmkv -b "/path/to/movies/*.mkv" -s eng
 
+# Batch process with auto-created {basename}-subtitles directories
+./subscalpelmkv -b "*.mkv" -s eng,spa -o
+
 # Batch process with custom output directory
 ./subscalpelmkv -b "*.mkv" -s eng,spa -o ./subtitles
 
@@ -101,12 +100,7 @@ Process multiple MKV files at once using glob patterns:
 ./subscalpelmkv -b "Season 1/*.mkv" -s eng -f "{basename}-{language}.{extension}"
 ```
 
-**Batch Processing Features:**
-- **Automatic MKV filtering**: Only processes `.mkv` files from the pattern, ignoring other file types
-- **Progress tracking**: Shows current file being processed (e.g., "Processing file 2/5")
-- **Error resilience**: Continues processing remaining files if one fails
-- **Summary reporting**: Displays total files processed and success/failure counts
-- **Same options**: All track selection and output options work with batch processing
+Batch processing filters to `.mkv` files only and continues processing remaining files if one fails.
 
 #### Subtitle Track Selection With Additive Filtering
 ```sh
@@ -133,6 +127,9 @@ Process multiple MKV files at once using glob patterns:
 ```sh
 # Custom output directory (automatically created if it doesn't exist)
 ./subscalpelmkv -x "path/to/video.mkv" -o ./subtitles
+
+# Auto-create {basename}-subtitles directory in input file's directory
+./subscalpelmkv -x "path/to/video.mkv" -o
 
 # Custom filename template
 ./subscalpelmkv -x "path/to/video.mkv" -f "{basename}-{language}.{extension}"
@@ -161,16 +158,14 @@ Process multiple MKV files at once using glob patterns:
 ##### Output Options
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--output-dir` | `-o` | Custom output directory (automatically created if it doesn't exist, default: same as input file) |
+| `--output-dir` | `-o` | Custom output directory, or when used without arguments, auto-create `{basename}-subtitles` directory in input file's location (automatically created if it doesn't exist, default: same as input file) |
 | `--format` | `-f` | Custom filename template with placeholders |
 
 #### Language Code Support
 
-SubScalpelMKV supports comprehensive ISO language codes:
-- **ISO 639-1**: All standard 2-letter language codes (e.g., `en`, `es`, `fr`, `de`, `ja`, `zh`)
-- **ISO 639-2/B**: All standard 3-letter bibliographic codes (e.g., `eng`, `spa`, `fre`, `ger`, `jpn`, `chi`)
-
-The tool automatically handles both formats and displays the full language name in track listings for clarity. This ensures compatibility with subtitles in virtually any language found in MKV files.
+Supports ISO 639-1 (2-letter) and ISO 639-2/B (3-letter) language codes:
+- 2-letter: `en`, `es`, `fr`, `de`, `ja`, `zh`, and more
+- 3-letter: `eng`, `spa`, `fre`, `ger`, `jpn`, `chi`, and more
 
 ### Output File Naming
 
@@ -216,15 +211,30 @@ You can customize the output filename format using the `-f` flag with placeholde
 
 #### Output Directory Control
 - **Default**: Files are saved in the same directory as the input MKV file
-- **Custom Directory**: Use `-o` to specify a different output directory (automatically created if it doesn't exist)
+- **Auto-create Directory**: Use `-o` without arguments to create a `{basename}-subtitles` directory in the same location as the input file
+- **Custom Directory**: Use `-o <directory>` to specify a different output directory (automatically created if it doesn't exist)
 
 **Directory Examples:**
 ```sh
-# Save to generic directory
+# Default behavior - save in same directory as input file
+./subscalpelmkv -x path/to/video.mkv
+# Result: subtitles saved to path/to/
+
+# Auto-create {basename}-subtitles directory in input file's location
+./subscalpelmkv -x path/to/video.mkv -o
+# Result: subtitles saved to path/to/video-subtitles/
+
+# Save to specific directory
 ./subscalpelmkv -x path/to/video.mkv -o ./extracted-subtitles
+# Result: subtitles saved to ./extracted-subtitles/
 
 # Organize by movie name
 ./subscalpelmkv -x path/to/video.mkv -o "./subtitles/Movie Name"
+# Result: subtitles saved to ./subtitles/Movie Name/
+
+# Batch processing with auto-created {basename}-subtitles directories per file
+./subscalpelmkv -b "Season1/*.mkv" -o -s eng
+# Result: each file gets its own directory (e.g., Season1/episode01-subtitles/)
 ```
 ## License
 

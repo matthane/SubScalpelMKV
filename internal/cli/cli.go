@@ -178,8 +178,9 @@ func ShowHelp() {
 	                            Mixed: combine all types (e.g., 'eng,14,srt,sup')
 	                            If not specified, all subtitle tracks will be extracted`)
 
-	format.PrintUsageSection("Output Options", `  -o, --output-dir <dir>     Output directory for extracted subtitle files
+	format.PrintUsageSection("Output Options", `  -o, --output-dir [dir]     Output directory for extracted subtitle files
                              (default: same directory as input file)
+                             If -o is used without a directory, creates {basename}-subtitles
                              Output directory will be created if it doesn't exist
   -f, --format <template>    Custom filename template with placeholders:
                              {basename}, {language}, {trackno}, {trackname},
@@ -199,6 +200,7 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -b \"Season 1/*.mkv\" -s eng,spa")
 	format.PrintExample("subscalpelmkv -b \"/path/to/movies/*.mkv\" -o ./subtitles")
 	format.PrintExample("subscalpelmkv -x video.mkv -o ./subtitles")
+	format.PrintExample("subscalpelmkv -x video.mkv -o")
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
 

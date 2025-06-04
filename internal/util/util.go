@@ -31,7 +31,13 @@ func BuildSubtitlesFileName(inputFileName string, track model.MKVTrack) string {
 func BuildSubtitlesFileNameWithConfig(inputFileName string, track model.MKVTrack, config model.OutputConfig) string {
 	var outputDir string
 	if config.OutputDir != "" {
-		outputDir = config.OutputDir
+		// Handle special case for batch mode with -o flag without arguments
+		if config.OutputDir == "BATCH_BASENAME_SUBTITLES" {
+			baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
+			outputDir = filepath.Join(filepath.Dir(inputFileName), baseName+"-subtitles")
+		} else {
+			outputDir = config.OutputDir
+		}
 	} else {
 		outputDir = filepath.Dir(inputFileName)
 	}

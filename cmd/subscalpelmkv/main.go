@@ -378,6 +378,27 @@ func main() {
 		}
 	}
 
+	// Check if -o flag is used without arguments and handle it specially
+	hasOutputFlagWithoutValue := false
+	modifiedArgs := make([]string, len(args))
+	copy(modifiedArgs, args)
+	
+	for i, arg := range args {
+		if arg == "-o" || arg == "--output-dir" {
+			// Check if next argument exists and doesn't start with '-'
+			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "-") {
+				hasOutputFlagWithoutValue = true
+				// Insert a special marker value that gocmd can parse
+				modifiedArgs = append(modifiedArgs[:i+1], append([]string{"__BASENAME_SUBTITLES__"}, modifiedArgs[i+1:]...)...)
+				break
+			}
+		}
+	}
+	
+	// Replace the original os.Args with our modified version for gocmd
+	originalArgs := os.Args
+	os.Args = append([]string{os.Args[0]}, modifiedArgs...)
+
 	// Detect execution mode: drag-and-drop vs CLI
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		// Check if we have multiple separate files vs one file with spaces
@@ -472,6 +493,12 @@ func main() {
 			CreateDir: true, // Always create directory if it doesn't exist
 		}
 
+		// Handle special case where -o is used without arguments
+		if hasOutputFlagWithoutValue || flags.OutputDir == "__BASENAME_SUBTITLES__" {
+			baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
+			outputConfig.OutputDir = filepath.Join(filepath.Dir(inputFileName), baseName+"-subtitles")
+		}
+
 		if outputConfig.Template == "" {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
@@ -488,6 +515,12 @@ func main() {
 			OutputDir: flags.OutputDir,
 			Template:  flags.OutputTemplate,
 			CreateDir: true, // Always create directory if it doesn't exist
+		}
+
+		// Handle special case where -o is used without arguments
+		// For batch mode, we'll create individual {basename}-subtitles directories for each file
+		if hasOutputFlagWithoutValue || flags.OutputDir == "__BASENAME_SUBTITLES__" {
+			outputConfig.OutputDir = "BATCH_BASENAME_SUBTITLES" // Special marker for batch mode
 		}
 
 		if outputConfig.Template == "" {
@@ -510,4 +543,7 @@ func main() {
 	}
 
 	os.Exit(ErrCodeSuccess)
+	
+	// Restore original args
+	os.Args = originalArgs
 }
