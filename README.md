@@ -69,6 +69,17 @@ Drag multiple MKV files onto the executable for batch processing:
 
 Multi-file processing continues with remaining files if one fails.
 
+#### Directory Drag-and-Drop
+Drag a folder onto the executable to process all MKV files within it:
+
+1. Recursively scans the directory for all MKV files
+2. Shows all found MKV files that will be processed
+3. Apply the same track selection to all files
+4. Shows progress for each file
+5. Displays processing summary
+
+You can also drag multiple folders and files together - the tool will collect all MKV files from both individual files and directories.
+
 ### Command Line Mode
 
 #### Basic Usage
