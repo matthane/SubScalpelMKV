@@ -163,9 +163,12 @@ func ParseTrackSelection(input string) model.TrackSelection {
 func ShowHelp() {
 	format.PrintUsageSection("Usage", `  subscalpelmkv [OPTIONS] <file>
   subscalpelmkv -x <file> [selection options] [output options]
+  subscalpelmkv -b <pattern> [selection options] [output options]
   subscalpelmkv -i <file>`)
 
 	format.PrintUsageSection("Selection Options", `  -x, --extract <file>       Extract subtitles from MKV file
+	 -b, --batch <pattern>      Extract subtitles from multiple MKV files using glob pattern
+	                            (e.g., '*.mkv', 'Season 1/*.mkv', '/path/to/*.mkv')
 	 -i, --info <file>          Display subtitle track information
 	 -s, --select <selection>   Select subtitle tracks by language codes, track IDs,
 	                            and/or subtitle formats. Use comma-separated values.
@@ -192,6 +195,9 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv -s srt,ass")
 	format.PrintExample("subscalpelmkv -x video.mkv -s sup")
 	format.PrintExample("subscalpelmkv -x video.mkv -s eng,14,srt,sup")
+	format.PrintExample("subscalpelmkv -b \"*.mkv\" -s eng")
+	format.PrintExample("subscalpelmkv -b \"Season 1/*.mkv\" -s eng,spa")
+	format.PrintExample("subscalpelmkv -b \"/path/to/movies/*.mkv\" -o ./subtitles")
 	format.PrintExample("subscalpelmkv -x video.mkv -o ./subtitles")
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
@@ -468,4 +474,176 @@ func ShowFileInfo(inputFileName string) error {
 	DisplaySubtitleTracks(mkvInfo)
 
 	return nil
+}
+
+// DisplayBatchFiles shows batch file information to the user in the same visual style as subtitle tracks
+func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
+	format.PrintSection("Files to Process")
+	
+	// Use expanded view as default for batch mode
+	for i, fileInfo := range batchFiles {
+		if fileInfo.HasError {
+			// Display error files differently
+			format.BorderColor.Print("│ ")
+			format.ErrorColor.Print("✗")
+			fmt.Print(" ")
+			format.BaseFg.Print(fileInfo.FileName)
+			
+			contentLen := 2 + 2 + len(fileInfo.FileName) // "│ " + "✗ " + filename
+			padding := format.BoxWidth - contentLen
+			if padding > 0 {
+				fmt.Print(strings.Repeat(" ", padding))
+			}
+			format.BorderColor.Println(" │")
+			
+			// Error message on second line
+			format.BorderColor.Print("│   ")
+			format.ErrorColor.Print(fileInfo.ErrorMessage)
+			errorLen := 3 + len(fileInfo.ErrorMessage) // "│   " + error
+			errorPadding := format.BoxWidth - errorLen - 1
+			if errorPadding > 0 {
+				fmt.Print(strings.Repeat(" ", errorPadding))
+			}
+			format.BorderColor.Println(" │")
+		} else {
+			// Display normal files
+			format.BorderColor.Print("│ ")
+			format.SubtitleTrackColor.Print("▪")
+			fmt.Print(" ")
+			format.BaseFg.Print(fileInfo.FileName)
+			
+			contentLen := 2 + 2 + len(fileInfo.FileName) // "│ " + "▪ " + filename
+			padding := format.BoxWidth - contentLen
+			if padding > 0 {
+				fmt.Print(strings.Repeat(" ", padding))
+			}
+			format.BorderColor.Println(" │")
+			
+			// Always use expanded view for batch mode
+			displayExpandedFileDetails(fileInfo)
+		}
+		
+		// Add separator between files except for the last one
+		if i < len(batchFiles)-1 {
+			format.DrawSeparator(format.BoxWidth)
+		}
+	}
+	
+	// Calculate and display summary
+	validFiles := 0
+	errorFiles := 0
+	totalTracks := 0
+	languageSet := make(map[string]bool)
+	formatSet := make(map[string]bool)
+	
+	for _, fileInfo := range batchFiles {
+		if fileInfo.HasError {
+			errorFiles++
+		} else {
+			validFiles++
+			totalTracks += fileInfo.SubtitleCount
+			
+			for _, lang := range fileInfo.LanguageCodes {
+				languageSet[lang] = true
+			}
+			for _, format := range fileInfo.SubtitleFormats {
+				formatSet[strings.ToUpper(format)] = true
+			}
+		}
+	}
+	
+	if len(batchFiles) > 0 {
+		format.DrawSeparator(format.BoxWidth)
+	}
+	
+	// Display summary
+	fileWord := "files"
+	if validFiles == 1 {
+		fileWord = "file"
+	}
+	
+	trackWord := "tracks"
+	if totalTracks == 1 {
+		trackWord = "track"
+	}
+	
+	languageWord := "languages"
+	if len(languageSet) == 1 {
+		languageWord = "language"
+	}
+	
+	formatWord := "formats"
+	if len(formatSet) == 1 {
+		formatWord = "format"
+	}
+	
+	var summaryMsg string
+	if errorFiles > 0 {
+		summaryMsg = fmt.Sprintf("%d valid %s, %d total %s, %d %s, %d %s • %d errors", 
+			validFiles, fileWord, totalTracks, trackWord, len(languageSet), languageWord, len(formatSet), formatWord, errorFiles)
+	} else {
+		summaryMsg = fmt.Sprintf("%d %s, %d total %s, %d %s, %d %s", 
+			validFiles, fileWord, totalTracks, trackWord, len(languageSet), languageWord, len(formatSet), formatWord)
+	}
+	
+	visibleLen := 2 + len(summaryMsg) // "│ " + message
+	padding := format.BoxWidth - visibleLen
+	format.BorderColor.Print("│ ")
+	format.InfoColor.Print(summaryMsg)
+	if padding > 0 {
+		fmt.Print(strings.Repeat(" ", padding))
+	}
+	format.BorderColor.Println(" │")
+	
+	format.DrawBoxBottom(format.BoxWidth)
+}
+
+// displayExpandedFileDetails shows all file details across multiple lines
+func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
+	// Track count line
+	format.BorderColor.Print("│   ")
+	trackText := fmt.Sprintf("Tracks: %d", fileInfo.SubtitleCount)
+	format.InfoColor.Print(trackText)
+	trackLen := 3 + len(trackText)
+	trackPadding := format.BoxWidth - trackLen - 1
+	if trackPadding > 0 {
+		fmt.Print(strings.Repeat(" ", trackPadding))
+	}
+	format.BorderColor.Println(" │")
+	
+	// Languages line (if any)
+	if len(fileInfo.LanguageCodes) > 0 {
+		format.BorderColor.Print("│   ")
+		langLabel := "Languages: "
+		format.BaseDim.Print(langLabel)
+		
+		// Display all languages, wrapping if necessary
+		allLangs := strings.Join(fileInfo.LanguageCodes, ", ")
+		format.BaseAccent.Print(allLangs)
+		
+		lineLen := 3 + len(langLabel) + len(allLangs)
+		langPadding := format.BoxWidth - lineLen - 1
+		if langPadding > 0 {
+			fmt.Print(strings.Repeat(" ", langPadding))
+		}
+		format.BorderColor.Println(" │")
+	}
+	
+	// Formats line (if any)
+	if len(fileInfo.SubtitleFormats) > 0 {
+		format.BorderColor.Print("│   ")
+		formatLabel := "Formats: "
+		format.BaseDim.Print(formatLabel)
+		
+		// Display all formats
+		allFormats := strings.Join(fileInfo.SubtitleFormats, ", ")
+		format.CodecColor.Print(strings.ToUpper(allFormats))
+		
+		lineLen := 3 + len(formatLabel) + len(allFormats)
+		formatPadding := format.BoxWidth - lineLen - 1
+		if formatPadding > 0 {
+			fmt.Print(strings.Repeat(" ", formatPadding))
+		}
+		format.BorderColor.Println(" │")
+	}
 }

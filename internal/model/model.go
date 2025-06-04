@@ -721,3 +721,14 @@ type ExtractionResult struct {
 	Job   ExtractionJob
 	Error error
 }
+
+// BatchFileInfo represents information about a file in batch processing
+type BatchFileInfo struct {
+	FileName       string
+	FilePath       string
+	SubtitleCount  int
+	LanguageCodes  []string
+	SubtitleFormats []string
+	HasError       bool
+	ErrorMessage   string
+}

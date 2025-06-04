@@ -5,6 +5,7 @@
 ## Features
 
 - Extract subtitle tracks from MKV files using MKVToolNix
+- **Batch processing**: Process multiple MKV files at once using glob patterns
 - Support for multiple subtitle formats:
   - **Text-based**: SRT, ASS, SSA, WebVTT, USF, TXT
   - **Image-based**: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
@@ -46,17 +47,31 @@
 
 ### Drag-and-Drop Mode
 
+#### Single File Drag-and-Drop
 Drag an MKV file onto the executable for interactive mode:
 
 1. The tool analyzes the file and displays available subtitle tracks
-
 2. Choose to extract all tracks or make a custom selection
-
 3. For custom selection, enter:
     - Language codes: `eng,spa,fre`
     - Track numbers: `3,5,7`
     - Subtitle formats: `srt,ass,sup`
     - Mixed selection: `eng,3,srt,sup`
+
+#### Multi-File Drag-and-Drop
+Drag multiple MKV files onto the executable for batch processing:
+
+1. **Automatic Detection**: The tool automatically detects when multiple MKV files are provided
+2. **File Listing**: Shows all files that will be processed
+3. **Unified Selection**: Choose to extract all tracks or make a custom selection that applies to all files
+4. **Progress Tracking**: Shows progress for each file (e.g., "Processing file 2/5")
+5. **Batch Summary**: Displays total files processed and success/failure counts
+
+**Multi-File Features:**
+- **Smart Detection**: Automatically distinguishes between multiple files and single files with spaces in names
+- **Same Interface**: Uses the same track selection interface as single-file mode
+- **Error Resilience**: Continues processing other files if one fails
+- **Consistent Output**: Each file's subtitles are saved using the same naming convention
 
 ### Command Line Mode
 
@@ -65,6 +80,33 @@ Drag an MKV file onto the executable for interactive mode:
 # Extract all subtitle tracks
 ./subscalpelmkv -x "path/to/video.mkv"
 ```
+
+#### Batch Processing
+Process multiple MKV files at once using glob patterns:
+
+```sh
+# Process all MKV files in current directory
+./subscalpelmkv -b "*.mkv" -s eng
+
+# Process all episodes in a season folder
+./subscalpelmkv -b "Season 1/*.mkv" -s eng,spa
+
+# Process files in a specific path
+./subscalpelmkv -b "/path/to/movies/*.mkv" -s eng
+
+# Batch process with custom output directory
+./subscalpelmkv -b "*.mkv" -s eng,spa -o ./subtitles
+
+# Batch process with custom filename template
+./subscalpelmkv -b "Season 1/*.mkv" -s eng -f "{basename}-{language}.{extension}"
+```
+
+**Batch Processing Features:**
+- **Automatic MKV filtering**: Only processes `.mkv` files from the pattern, ignoring other file types
+- **Progress tracking**: Shows current file being processed (e.g., "Processing file 2/5")
+- **Error resilience**: Continues processing remaining files if one fails
+- **Summary reporting**: Displays total files processed and success/failure counts
+- **Same options**: All track selection and output options work with batch processing
 
 #### Subtitle Track Selection With Additive Filtering
 ```sh
@@ -111,6 +153,7 @@ Drag an MKV file onto the executable for interactive mode:
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--extract` | `-x` | Path to MKV file (required) |
+| `--batch` | `-b` | Extract subtitles from multiple MKV files using glob pattern (e.g., '*.mkv', 'Season 1/*.mkv') |
 | `--select` | `-s` | Language codes, track numbers, subtitle formats, or any combination (comma-separated) |
 | `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
