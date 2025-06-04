@@ -792,37 +792,217 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 	
 	// Languages line (if any)
 	if len(fileInfo.LanguageCodes) > 0 {
-		format.BorderColor.Print("│   ")
+		// Calculate available width for content
+		prefixLen := 3 // "│   "
+		suffixLen := 2 // " │"
+		availableWidth := format.BoxWidth - prefixLen - suffixLen
+		
 		langLabel := "Languages: "
-		format.BaseDim.Print(langLabel)
+		langLabelLen := len(langLabel)
 		
-		// Display all languages, wrapping if necessary
+		// Join all languages
 		allLangs := strings.Join(fileInfo.LanguageCodes, ", ")
-		format.BaseAccent.Print(allLangs)
 		
-		lineLen := 3 + len(langLabel) + len(allLangs)
-		langPadding := format.BoxWidth - lineLen - 1
-		if langPadding > 0 {
-			fmt.Print(strings.Repeat(" ", langPadding))
+		// Check if it fits in one line
+		if langLabelLen + len(allLangs) <= availableWidth {
+			// Single line display
+			format.BorderColor.Print("│   ")
+			format.BaseDim.Print(langLabel)
+			format.BaseAccent.Print(allLangs)
+			
+			lineLen := prefixLen + langLabelLen + len(allLangs)
+			langPadding := format.BoxWidth - lineLen - 1
+			if langPadding > 0 {
+				fmt.Print(strings.Repeat(" ", langPadding))
+			}
+			format.BorderColor.Println(" │")
+		} else {
+			// Multi-line display with wrapping
+			format.BorderColor.Print("│   ")
+			format.BaseDim.Print(langLabel)
+			
+			// Calculate space remaining on first line
+			firstLineSpace := availableWidth - langLabelLen
+			
+			// Split languages into lines
+			langs := fileInfo.LanguageCodes
+			currentLine := ""
+			firstLine := true
+			
+			for i, lang := range langs {
+				// Add comma if not first item
+				if i > 0 {
+					lang = ", " + lang
+				}
+				
+				// Check if adding this language would exceed the line width
+				testLine := currentLine + lang
+				maxWidth := availableWidth - langLabelLen // Continuation lines have less space due to indentation
+				if firstLine {
+					maxWidth = firstLineSpace
+				}
+				
+				if len(testLine) > maxWidth && currentLine != "" {
+					// Print current line
+					if firstLine {
+						format.BaseAccent.Print(currentLine)
+						padding := format.BoxWidth - prefixLen - langLabelLen - len(currentLine) - 1
+						if padding > 0 {
+							fmt.Print(strings.Repeat(" ", padding))
+						}
+						format.BorderColor.Println(" │")
+						firstLine = false
+					} else {
+						format.BorderColor.Print("│   ")
+						fmt.Print(strings.Repeat(" ", langLabelLen)) // Indent continuation lines
+						format.BaseAccent.Print(currentLine)
+						padding := format.BoxWidth - prefixLen - langLabelLen - len(currentLine) - 1
+						if padding > 0 {
+							fmt.Print(strings.Repeat(" ", padding))
+						}
+						format.BorderColor.Println(" │")
+					}
+					
+					// Start new line (remove leading comma and space if present)
+					if strings.HasPrefix(lang, ", ") {
+						currentLine = lang[2:]
+					} else {
+						currentLine = lang
+					}
+				} else {
+					currentLine = testLine
+				}
+			}
+			
+			// Print the last line
+			if currentLine != "" {
+				if firstLine {
+					format.BaseAccent.Print(currentLine)
+					padding := format.BoxWidth - prefixLen - langLabelLen - len(currentLine) - 1
+					if padding > 0 {
+						fmt.Print(strings.Repeat(" ", padding))
+					}
+					format.BorderColor.Println(" │")
+				} else {
+					format.BorderColor.Print("│   ")
+					fmt.Print(strings.Repeat(" ", langLabelLen)) // Indent continuation lines
+					format.BaseAccent.Print(currentLine)
+					padding := format.BoxWidth - prefixLen - langLabelLen - len(currentLine) - 1
+					if padding > 0 {
+						fmt.Print(strings.Repeat(" ", padding))
+					}
+					format.BorderColor.Println(" │")
+				}
+			}
 		}
-		format.BorderColor.Println(" │")
 	}
 	
 	// Formats line (if any)
 	if len(fileInfo.SubtitleFormats) > 0 {
-		format.BorderColor.Print("│   ")
+		// Calculate available width for content
+		prefixLen := 3 // "│   "
+		suffixLen := 2 // " │"
+		availableWidth := format.BoxWidth - prefixLen - suffixLen
+		
 		formatLabel := "Formats: "
-		format.BaseDim.Print(formatLabel)
+		formatLabelLen := len(formatLabel)
 		
-		// Display all formats
+		// Join all formats
 		allFormats := strings.Join(fileInfo.SubtitleFormats, ", ")
-		format.CodecColor.Print(strings.ToUpper(allFormats))
+		allFormatsUpper := strings.ToUpper(allFormats)
 		
-		lineLen := 3 + len(formatLabel) + len(allFormats)
-		formatPadding := format.BoxWidth - lineLen - 1
-		if formatPadding > 0 {
-			fmt.Print(strings.Repeat(" ", formatPadding))
+		// Check if it fits in one line
+		if formatLabelLen + len(allFormatsUpper) <= availableWidth {
+			// Single line display
+			format.BorderColor.Print("│   ")
+			format.BaseDim.Print(formatLabel)
+			format.CodecColor.Print(allFormatsUpper)
+			
+			lineLen := prefixLen + formatLabelLen + len(allFormatsUpper)
+			formatPadding := format.BoxWidth - lineLen - 1
+			if formatPadding > 0 {
+				fmt.Print(strings.Repeat(" ", formatPadding))
+			}
+			format.BorderColor.Println(" │")
+		} else {
+			// Multi-line display with wrapping
+			format.BorderColor.Print("│   ")
+			format.BaseDim.Print(formatLabel)
+			
+			// Calculate space remaining on first line
+			firstLineSpace := availableWidth - formatLabelLen
+			
+			// Split formats into lines
+			formats := fileInfo.SubtitleFormats
+			currentLine := ""
+			firstLine := true
+			
+			for i, fmtStr := range formats {
+				// Add comma if not first item
+				fmtUpper := strings.ToUpper(fmtStr)
+				if i > 0 {
+					fmtUpper = ", " + fmtUpper
+				}
+				
+				// Check if adding this format would exceed the line width
+				testLine := currentLine + fmtUpper
+				maxWidth := availableWidth - formatLabelLen // Continuation lines have less space due to indentation
+				if firstLine {
+					maxWidth = firstLineSpace
+				}
+				
+				if len(testLine) > maxWidth && currentLine != "" {
+					// Print current line
+					if firstLine {
+						format.CodecColor.Print(currentLine)
+						padding := format.BoxWidth - prefixLen - formatLabelLen - len(currentLine) - 1
+						if padding > 0 {
+							fmt.Print(strings.Repeat(" ", padding))
+						}
+						format.BorderColor.Println(" │")
+						firstLine = false
+					} else {
+						format.BorderColor.Print("│   ")
+						fmt.Print(strings.Repeat(" ", formatLabelLen)) // Indent continuation lines
+						format.CodecColor.Print(currentLine)
+						padding := format.BoxWidth - prefixLen - formatLabelLen - len(currentLine) - 1
+						if padding > 0 {
+							fmt.Print(strings.Repeat(" ", padding))
+						}
+						format.BorderColor.Println(" │")
+					}
+					
+					// Start new line (remove leading comma and space if present)
+					if strings.HasPrefix(fmtUpper, ", ") {
+						currentLine = fmtUpper[2:]
+					} else {
+						currentLine = fmtUpper
+					}
+				} else {
+					currentLine = testLine
+				}
+			}
+			
+			// Print the last line
+			if currentLine != "" {
+				if firstLine {
+					format.CodecColor.Print(currentLine)
+					padding := format.BoxWidth - prefixLen - formatLabelLen - len(currentLine) - 1
+					if padding > 0 {
+						fmt.Print(strings.Repeat(" ", padding))
+					}
+					format.BorderColor.Println(" │")
+				} else {
+					format.BorderColor.Print("│   ")
+					fmt.Print(strings.Repeat(" ", formatLabelLen)) // Indent continuation lines
+					format.CodecColor.Print(currentLine)
+					padding := format.BoxWidth - prefixLen - formatLabelLen - len(currentLine) - 1
+					if padding > 0 {
+						fmt.Print(strings.Repeat(" ", padding))
+					}
+					format.BorderColor.Println(" │")
+				}
+			}
 		}
-		format.BorderColor.Println(" │")
 	}
 }
