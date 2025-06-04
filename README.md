@@ -13,6 +13,7 @@
 - Track selection by language codes, track numbers, or format types
 - Customizable output directories and filename templates
 - Dry run mode to preview extraction without creating files
+- Configuration file support with named profiles
 - Interactive drag-and-drop mode
 - Command-line interface
 
@@ -192,12 +193,95 @@ Dry run mode displays:
 | `--output-dir` | `-o` | Custom output directory, or when used without arguments, auto-create `{basename}-subtitles` directory in input file's location (automatically created if it doesn't exist, default: same as input file) |
 | `--format` | `-f` | Custom filename template with placeholders |
 | `--dry-run` | `-d` | Preview what would be extracted without performing extraction |
+| `--config` | `-c` | Use default configuration profile |
+| `--profile` | `-p` | Use named configuration profile |
 
 #### Language Code Support
 
 Supports ISO 639-1 (2-letter) and ISO 639-2/B (3-letter) language codes:
 - 2-letter: `en`, `es`, `fr`, `de`, `ja`, `zh`, and more
 - 3-letter: `eng`, `spa`, `fre`, `ger`, `jpn`, `chi`, and more
+
+### Configuration Files
+
+SubScalpelMKV supports configuration files to set default options and create named profiles for different use cases. This eliminates the need to specify the same options repeatedly.
+
+#### Configuration File Locations
+
+Configuration files are searched in this order (first found is used):
+
+1. **Current directory**: `./subscalpelmkv.yaml`
+2. **OS-specific config directory**:
+   - **Linux/macOS**: `~/.config/subscalpelmkv/config.yaml`
+   - **Windows**: `%APPDATA%\subscalpelmkv\config.yaml`
+3. **Home directory**: `~/.subscalpelmkv.yaml`
+
+#### Configuration Format
+
+Configuration files use YAML format with the following structure:
+
+```yaml
+# Default settings applied when using --config
+default_languages: [eng, spa]
+output_template: "{basename}.{language}.{trackno}.{extension}"
+output_dir: "./subtitles"
+
+# Named profiles for different use cases
+profiles:
+  anime:
+    languages: [jpn, eng]
+    output_template: "{basename}/{language}.{extension}"
+    output_dir: "./anime_subs"
+    
+  movies:
+    languages: [eng]
+    output_template: "{basename}-{language}.{extension}"
+    output_dir: "./movie_subs"
+    
+  multilang:
+    languages: [eng, spa, fre, ger]
+    output_template: "{basename}/{language}/{trackname}.{extension}"
+    output_dir: "./multi_subs"
+```
+
+#### Configuration Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `default_languages` | Array | Default language codes to extract |
+| `output_template` | String | Default filename template |
+| `output_dir` | String | Default output directory |
+| `profiles` | Object | Named configuration profiles |
+
+#### Using Configuration
+
+```sh
+# Use default configuration settings
+./subscalpelmkv -x video.mkv --config
+
+# Use a named profile
+./subscalpelmkv -x video.mkv --profile anime
+
+# CLI flags override config settings
+./subscalpelmkv -x video.mkv --profile anime -s eng
+
+# Batch processing with configuration
+./subscalpelmkv -b "*.mkv" --profile movies
+
+# Dry run with configuration
+./subscalpelmkv -x video.mkv --profile anime --dry-run
+```
+
+#### Configuration Priority
+
+Settings are applied in this order (later values override earlier ones):
+
+1. Built-in defaults
+2. Configuration file defaults
+3. Named profile settings (if `--profile` is used)
+4. Command-line flags
+
+This means CLI flags always take precedence over configuration settings.
 
 ### Output File Naming
 

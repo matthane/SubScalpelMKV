@@ -11,6 +11,7 @@ import (
 	"github.com/devfacet/gocmd/v3"
 
 	"subscalpelmkv/internal/cli"
+	"subscalpelmkv/internal/config"
 	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/mkv"
 	"subscalpelmkv/internal/model"
@@ -576,6 +577,8 @@ func main() {
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
 		DryRun         bool   `short:"d" long:"dry-run" description:"Show what would be extracted without performing extraction"`
+		UseConfig      bool   `short:"c" long:"config" description:"Use default configuration profile"`
+		Profile        string `short:"p" long:"profile" description:"Use named configuration profile"`
 	}{}
 
 	_, cmdErr := gocmd.New(gocmd.Options{
@@ -589,6 +592,51 @@ func main() {
 	if cmdErr != nil {
 		format.PrintError(fmt.Sprintf("Error creating command: %v", cmdErr))
 		return
+	}
+
+	// Load configuration if requested
+	var appliedConfig *config.AppliedConfig
+	if flags.UseConfig || flags.Profile != "" {
+		cfg, err := config.LoadConfigWithFallback()
+		if err != nil {
+			format.PrintError(fmt.Sprintf("Error loading configuration: %v", err))
+			os.Exit(ErrCodeFailure)
+		}
+
+		if flags.Profile != "" {
+			appliedConfig, err = cfg.ApplyProfile(flags.Profile)
+			if err != nil {
+				format.PrintError(fmt.Sprintf("Error applying profile '%s': %v", flags.Profile, err))
+				os.Exit(ErrCodeFailure)
+			}
+		} else {
+			appliedConfig = cfg.ApplyDefaults()
+		}
+
+		// Merge configuration with CLI flags (CLI flags take precedence)
+		cliFlags := config.CLIFlags{
+			OutputTemplate: flags.OutputTemplate,
+			OutputDir:      flags.OutputDir,
+		}
+		
+		// Parse languages from Select flag if provided
+		if flags.Select != "" {
+			selection := cli.ParseTrackSelection(flags.Select)
+			cliFlags.Languages = selection.LanguageCodes
+		}
+
+		appliedConfig = appliedConfig.MergeWithCLI(cliFlags)
+
+		// Apply config values back to flags if they weren't set via CLI
+		if flags.OutputTemplate == "" && appliedConfig.OutputTemplate != "" {
+			flags.OutputTemplate = appliedConfig.OutputTemplate
+		}
+		if flags.OutputDir == "" && appliedConfig.OutputDir != "" {
+			flags.OutputDir = appliedConfig.OutputDir
+		}
+		if flags.Select == "" && len(appliedConfig.Languages) > 0 {
+			flags.Select = strings.Join(appliedConfig.Languages, ",")
+		}
 	}
 
 	if (flags.Extract != "" && flags.Info != "") || 

@@ -186,6 +186,8 @@ func ShowHelp() {
                              {basename}, {language}, {trackno}, {trackname},
                              {forced}, {default}, {extension}
   -d, --dry-run              Show what would be extracted without performing extraction
+  -c, --config               Use default configuration profile
+  -p, --profile <name>       Use named configuration profile
   -h, --help                 Show this help message`)
 
 	format.PrintUsageSection("Examples", "")
@@ -204,11 +206,22 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv -o")
 	format.PrintExample("subscalpelmkv -x video.mkv -f \"{basename}-{language}.{extension}\"")
 	format.PrintExample("subscalpelmkv -x video.mkv -s eng --dry-run")
+	format.PrintExample("subscalpelmkv -x video.mkv --config")
+	format.PrintExample("subscalpelmkv -x video.mkv --profile anime")
 	format.PrintExample("subscalpelmkv video.mkv    (drag-and-drop mode)")
 
 	format.PrintUsageSection("Default filename template", `  {basename}.{language}.{trackno}.{trackname}.{forced}.{default}.{extension}`)
 
 	format.PrintUsageSection("Language codes", `  Supports both 2-letter (en, es, fr) and 3-letter (eng, spa, fre) codes`)
+
+	format.PrintUsageSection("Configuration", `  Config files are searched in this order:
+  1. ./subscalpelmkv.yaml (current directory)
+  2. ~/.config/subscalpelmkv/config.yaml (Linux/macOS)
+     %APPDATA%\subscalpelmkv\config.yaml (Windows)
+  3. ~/.subscalpelmkv.yaml (home directory)
+  
+  CLI flags override config values. Use --config for default profile
+  or --profile <name> for named profiles.`)
 
 	format.PrintUsageSection("Drag-and-drop mode", `  Simply drag an MKV file onto the executable for interactive mode
   with track selection options.
