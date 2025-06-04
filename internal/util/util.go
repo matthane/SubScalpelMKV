@@ -78,7 +78,7 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 		"{basename}":  baseName,
 		"{language}":  track.Properties.Language,
 		"{trackno}":   trackNo,
-		"{trackname}": track.Properties.TrackName,
+		"{trackname}": sanitizeFileName(track.Properties.TrackName),
 		"{forced}":    "",
 		"{default}":   "",
 		"{extension}": subtitleExt,
@@ -99,6 +99,36 @@ func BuildFileNameFromTemplate(inputFileName string, track model.MKVTrack, templ
 	// Clean up multiple consecutive dots and trailing dots
 	result = cleanupFileName(result)
 
+	return result
+}
+
+// sanitizeFileName removes or replaces characters that are invalid in filenames
+func sanitizeFileName(filename string) string {
+	if filename == "" {
+		return ""
+	}
+	
+	// Replace problematic characters with safe alternatives
+	replacements := map[string]string{
+		"/": "-",     // Forward slash
+		"\\": "-",    // Backslash
+		":": "-",     // Colon
+		"*": "",      // Asterisk
+		"?": "",      // Question mark
+		"\"": "",     // Double quote
+		"<": "",      // Less than
+		">": "",      // Greater than
+		"|": "-",     // Pipe
+	}
+	
+	result := filename
+	for invalid, replacement := range replacements {
+		result = strings.ReplaceAll(result, invalid, replacement)
+	}
+	
+	// Remove leading/trailing spaces and dots
+	result = strings.Trim(result, " .")
+	
 	return result
 }
 
