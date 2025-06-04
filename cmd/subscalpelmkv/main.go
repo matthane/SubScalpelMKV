@@ -179,7 +179,7 @@ func processBatch(pattern, languageFilter string, showFilterMessage bool, output
 	errorCount := 0
 	
 	for i, file := range mkvFiles {
-		format.PrintSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(mkvFiles), filepath.Base(file)))
+		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(mkvFiles), filepath.Base(file)))
 		
 		err := processFile(file, languageFilter, false, outputConfig)
 		if err != nil {
@@ -198,7 +198,7 @@ func processBatch(pattern, languageFilter string, showFilterMessage bool, output
 
 	// Print summary
 	fmt.Println()
-	format.PrintSection("Batch Processing Summary")
+	format.PrintSubSection("Batch Processing Summary")
 	format.PrintInfo(fmt.Sprintf("Total files: %d", len(mkvFiles)))
 	format.PrintSuccess(fmt.Sprintf("Successfully processed: %d", successCount))
 	if errorCount > 0 {
@@ -329,7 +329,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	errorCount := 0
 	
 	for i, file := range validFiles {
-		format.PrintSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(validFiles), filepath.Base(file)))
+		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(validFiles), filepath.Base(file)))
 		
 		err := processFile(file, languageFilter, false, outputConfig)
 		if err != nil {
@@ -348,7 +348,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	
 	// Print summary
 	fmt.Println()
-	format.PrintSection("Batch Processing Summary")
+	format.PrintSubSection("Batch Processing Summary")
 	format.PrintInfo(fmt.Sprintf("Total files: %d", len(validFiles)))
 	format.PrintSuccess(fmt.Sprintf("Successfully processed: %d", successCount))
 	if errorCount > 0 {
