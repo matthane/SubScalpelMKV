@@ -655,6 +655,14 @@ type TrackSelection struct {
 	LanguageCodes []string
 	TrackNumbers  []int
 	FormatFilters []string // Subtitle format filters (e.g., "srt", "ass", "sup")
+	Exclusions    TrackExclusion // Tracks to exclude from selection
+}
+
+// TrackExclusion represents tracks to exclude from selection
+type TrackExclusion struct {
+	LanguageCodes []string
+	TrackNumbers  []int
+	FormatFilters []string // Subtitle format filters to exclude
 }
 
 // OutputConfig represents output configuration options

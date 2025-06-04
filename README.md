@@ -11,6 +11,7 @@
   - Image-based: SUP (PGS), VOBSUB (IDX/SUB), DVB subtitles, BMP
   - Other: KATE, HDMV/TEXTST
 - Track selection by language codes, track numbers, or format types
+- Track exclusion filters to exclude specific tracks from selection
 - Customizable output directories and filename templates
 - Dry run mode to preview extraction without creating files
 - Configuration file support with named profiles
@@ -59,6 +60,11 @@ Drag an MKV file onto the executable for interactive mode:
     - Track numbers: `3,5,7`
     - Subtitle formats: `srt,ass,sup`
     - Mixed selection: `eng,3,srt,sup`
+4. Optionally specify exclusions to remove specific tracks from your selection:
+    - Exclude languages: `chi,kor`
+    - Exclude track numbers: `15,17`
+    - Exclude formats: `sup,sub`
+    - Mixed exclusions: `chi,15,sup`
 
 #### Multi-File Drag-and-Drop
 Drag multiple MKV files onto the executable for batch processing:
@@ -136,6 +142,29 @@ Batch processing filters to `.mkv` files only and continues processing remaining
 ./subscalpelmkv -x "path/to/video.mkv" -s eng,3,srt,sup
 ```
 
+#### Track Exclusion Filters
+Exclude specific tracks from your selection using the `-e` flag. Exclusions are applied after selections and take precedence:
+
+```sh
+# Exclude specific languages
+./subscalpelmkv -x "path/to/video.mkv" -e chi,kor
+
+# Exclude specific track numbers
+./subscalpelmkv -x "path/to/video.mkv" -e 15,17
+
+# Exclude specific formats (useful for avoiding image-based subtitles)
+./subscalpelmkv -x "path/to/video.mkv" -e sup,sub
+
+# Select English and Spanish, but exclude SUP format
+./subscalpelmkv -x "path/to/video.mkv" -s eng,spa -e sup
+
+# Select all tracks except Chinese and track 15
+./subscalpelmkv -x "path/to/video.mkv" -e chi,15
+
+# Mixed exclusions: languages, track numbers, and formats
+./subscalpelmkv -x "path/to/video.mkv" -s eng,spa,fre -e chi,15,sup
+```
+
 #### Dry Run Mode
 Preview what subtitles would be extracted without performing the actual extraction:
 
@@ -184,6 +213,7 @@ Dry run mode displays:
 | `--extract` | `-x` | Path to MKV file (required) |
 | `--batch` | `-b` | Extract subtitles from multiple MKV files using glob pattern (e.g., '*.mkv', 'Season 1/*.mkv') |
 | `--select` | `-s` | Language codes, track numbers, subtitle formats, or any combination (comma-separated) |
+| `--exclude` | `-e` | Exclude specific tracks by language codes, track numbers, or formats (comma-separated) |
 | `--info` | `-i` | Show information about available subtitle tracks |
 | `--help` | `-h` | Show help message |
 
@@ -223,6 +253,7 @@ Configuration files use YAML format with the following structure:
 ```yaml
 # Default settings applied when using --config
 default_languages: [eng, spa]
+default_exclusions: [chi, kor]
 output_template: "{basename}.{language}.{trackno}.{extension}"
 output_dir: "./subtitles"
 
@@ -230,16 +261,19 @@ output_dir: "./subtitles"
 profiles:
   anime:
     languages: [jpn, eng]
+    exclusions: [chi, kor]
     output_template: "{basename}/{language}.{extension}"
     output_dir: "./anime_subs"
     
   movies:
     languages: [eng]
+    exclusions: [sup, sub]
     output_template: "{basename}-{language}.{extension}"
     output_dir: "./movie_subs"
     
   multilang:
     languages: [eng, spa, fre, ger]
+    exclusions: [chi, jpn, kor]
     output_template: "{basename}/{language}/{trackname}.{extension}"
     output_dir: "./multi_subs"
 ```
@@ -249,9 +283,16 @@ profiles:
 | Option | Type | Description |
 |--------|------|-------------|
 | `default_languages` | Array | Default language codes to extract |
+| `default_exclusions` | Array | Default language codes, track numbers, or formats to exclude |
 | `output_template` | String | Default filename template |
 | `output_dir` | String | Default output directory |
 | `profiles` | Object | Named configuration profiles |
+
+Each profile can contain:
+- `languages`: Array of language codes to select
+- `exclusions`: Array of language codes, track numbers, or formats to exclude
+- `output_template`: Custom filename template
+- `output_dir`: Custom output directory
 
 #### Using Configuration
 

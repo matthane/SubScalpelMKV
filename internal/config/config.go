@@ -10,15 +10,17 @@ import (
 
 // Config represents the main configuration structure
 type Config struct {
-	DefaultLanguages []string           `yaml:"default_languages"`
-	OutputTemplate   string             `yaml:"output_template"`
-	OutputDir        string             `yaml:"output_dir"`
-	Profiles         map[string]Profile `yaml:"profiles"`
+	DefaultLanguages   []string           `yaml:"default_languages"`
+	DefaultExclusions  []string           `yaml:"default_exclusions"`
+	OutputTemplate     string             `yaml:"output_template"`
+	OutputDir          string             `yaml:"output_dir"`
+	Profiles           map[string]Profile `yaml:"profiles"`
 }
 
 // Profile represents a named configuration profile
 type Profile struct {
 	Languages      []string `yaml:"languages"`
+	Exclusions     []string `yaml:"exclusions"`
 	OutputTemplate string   `yaml:"output_template"`
 	OutputDir      string   `yaml:"output_dir"`
 }
@@ -26,6 +28,7 @@ type Profile struct {
 // AppliedConfig represents the final configuration after merging defaults, config file, and CLI flags
 type AppliedConfig struct {
 	Languages      []string
+	Exclusions     []string
 	OutputTemplate string
 	OutputDir      string
 }
@@ -33,10 +36,11 @@ type AppliedConfig struct {
 // GetDefaultConfig returns the default configuration values
 func GetDefaultConfig() Config {
 	return Config{
-		DefaultLanguages: []string{},
-		OutputTemplate:   "",
-		OutputDir:        "",
-		Profiles:         make(map[string]Profile),
+		DefaultLanguages:  []string{},
+		DefaultExclusions: []string{},
+		OutputTemplate:    "",
+		OutputDir:         "",
+		Profiles:          make(map[string]Profile),
 	}
 }
 
@@ -115,6 +119,7 @@ func (c *Config) ApplyProfile(profileName string) (*AppliedConfig, error) {
 
 	applied := &AppliedConfig{
 		Languages:      c.DefaultLanguages,
+		Exclusions:     c.DefaultExclusions,
 		OutputTemplate: c.OutputTemplate,
 		OutputDir:      c.OutputDir,
 	}
@@ -122,6 +127,9 @@ func (c *Config) ApplyProfile(profileName string) (*AppliedConfig, error) {
 	// Override with profile values if they're set
 	if len(profile.Languages) > 0 {
 		applied.Languages = profile.Languages
+	}
+	if len(profile.Exclusions) > 0 {
+		applied.Exclusions = profile.Exclusions
 	}
 	if profile.OutputTemplate != "" {
 		applied.OutputTemplate = profile.OutputTemplate
@@ -137,6 +145,7 @@ func (c *Config) ApplyProfile(profileName string) (*AppliedConfig, error) {
 func (c *Config) ApplyDefaults() *AppliedConfig {
 	return &AppliedConfig{
 		Languages:      c.DefaultLanguages,
+		Exclusions:     c.DefaultExclusions,
 		OutputTemplate: c.OutputTemplate,
 		OutputDir:      c.OutputDir,
 	}
@@ -188,6 +197,7 @@ func GetConfigLocations() []string {
 // CLIFlags represents the command line flags that can be overridden by config
 type CLIFlags struct {
 	Languages      []string
+	Exclusions     []string
 	OutputTemplate string
 	OutputDir      string
 }
@@ -196,6 +206,7 @@ type CLIFlags struct {
 func (ac *AppliedConfig) MergeWithCLI(cli CLIFlags) *AppliedConfig {
 	merged := &AppliedConfig{
 		Languages:      ac.Languages,
+		Exclusions:     ac.Exclusions,
 		OutputTemplate: ac.OutputTemplate,
 		OutputDir:      ac.OutputDir,
 	}
@@ -203,6 +214,9 @@ func (ac *AppliedConfig) MergeWithCLI(cli CLIFlags) *AppliedConfig {
 	// CLI flags override config values if they're set
 	if len(cli.Languages) > 0 {
 		merged.Languages = cli.Languages
+	}
+	if len(cli.Exclusions) > 0 {
+		merged.Exclusions = cli.Exclusions
 	}
 	if cli.OutputTemplate != "" {
 		merged.OutputTemplate = cli.OutputTemplate

@@ -154,7 +154,12 @@ func cleanupFileName(filename string) string {
 
 // MatchesTrackSelection checks if a track matches the user's selection criteria
 func MatchesTrackSelection(track model.MKVTrack, selection model.TrackSelection) bool {
-	// If no selection criteria, match all
+	// First check if track should be excluded
+	if MatchesTrackExclusion(track, selection.Exclusions) {
+		return false
+	}
+
+	// If no selection criteria, match all (after exclusions)
 	if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 && len(selection.FormatFilters) == 0 {
 		return true
 	}
@@ -175,6 +180,37 @@ func MatchesTrackSelection(track model.MKVTrack, selection model.TrackSelection)
 
 	// Check if format matches (additive OR logic)
 	for _, formatFilter := range selection.FormatFilters {
+		if model.MatchesFormatFilter(track.Properties.CodecId, formatFilter) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// MatchesTrackExclusion checks if a track matches any of the exclusion criteria
+func MatchesTrackExclusion(track model.MKVTrack, exclusion model.TrackExclusion) bool {
+	// If no exclusion criteria, don't exclude any tracks
+	if len(exclusion.LanguageCodes) == 0 && len(exclusion.TrackNumbers) == 0 && len(exclusion.FormatFilters) == 0 {
+		return false
+	}
+
+	// Check if track number matches exclusion
+	for _, trackNum := range exclusion.TrackNumbers {
+		if track.Properties.Number == trackNum {
+			return true
+		}
+	}
+
+	// Check if language matches exclusion
+	for _, langCode := range exclusion.LanguageCodes {
+		if model.MatchesLanguageFilter(track.Properties.Language, langCode) {
+			return true
+		}
+	}
+
+	// Check if format matches exclusion
+	for _, formatFilter := range exclusion.FormatFilters {
 		if model.MatchesFormatFilter(track.Properties.CodecId, formatFilter) {
 			return true
 		}

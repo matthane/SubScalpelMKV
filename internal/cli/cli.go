@@ -58,6 +58,24 @@ func AskTrackSelection() string {
 	return strings.TrimSpace(input)
 }
 
+// AskTrackExclusion asks the user to enter exclusion criteria for tracks to exclude
+func AskTrackExclusion() string {
+	reader := bufio.NewReader(os.Stdin)
+
+	format.PrintSubSection("Track Exclusions (Optional)")
+	format.PrintInfo("Enter exclusions (comma-separated, or press Enter to skip):")
+	format.PrintExample("Language: chi,kor  •  Track ID: 15,17  •  Format: sup,sub  •  Mixed: chi,15,sup")
+	format.PrintPrompt("Exclusions: ")
+
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		format.PrintError(fmt.Sprintf("Error reading input: %v", err))
+		return ""
+	}
+
+	return strings.TrimSpace(input)
+}
+
 // ParseLanguageCodes parses comma-separated language codes and validates them
 func ParseLanguageCodes(input string) []string {
 	if input == "" {
@@ -101,6 +119,7 @@ func ParseTrackSelection(input string) model.TrackSelection {
 		LanguageCodes: []string{},
 		TrackNumbers:  []int{},
 		FormatFilters: []string{},
+		Exclusions:    model.TrackExclusion{},
 	}
 
 	if input == "" {
@@ -159,6 +178,70 @@ func ParseTrackSelection(input string) model.TrackSelection {
 	return selection
 }
 
+// ParseTrackExclusion parses comma-separated exclusion criteria (languages, track numbers, formats)
+func ParseTrackExclusion(input string) model.TrackExclusion {
+	exclusion := model.TrackExclusion{
+		LanguageCodes: []string{},
+		TrackNumbers:  []int{},
+		FormatFilters: []string{},
+	}
+
+	if input == "" {
+		return exclusion
+	}
+
+	items := strings.Split(input, ",")
+
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+
+		// Try to parse as track number first
+		if trackNum, err := strconv.Atoi(item); err == nil {
+			exclusion.TrackNumbers = append(exclusion.TrackNumbers, trackNum)
+			continue
+		}
+
+		// Try to parse as language code
+		isValidLanguage := false
+		if len(item) == 2 {
+			_, isValidLanguage = model.LanguageCodeMapping[strings.ToLower(item)]
+		} else if len(item) == 3 {
+			for _, threeLetter := range model.LanguageCodeMapping {
+				if strings.EqualFold(item, threeLetter) {
+					isValidLanguage = true
+					break
+				}
+			}
+		}
+
+		if isValidLanguage {
+			exclusion.LanguageCodes = append(exclusion.LanguageCodes, item)
+			continue
+		}
+
+		// Try to parse as subtitle format filter
+		isValidFormat := false
+		lowerItem := strings.ToLower(item)
+		for _, ext := range model.SubtitleExtensionByCodec {
+			if lowerItem == ext {
+				isValidFormat = true
+				break
+			}
+		}
+
+		if isValidFormat {
+			exclusion.FormatFilters = append(exclusion.FormatFilters, lowerItem)
+		} else {
+			format.PrintWarning(fmt.Sprintf("Unknown exclusion language code, format, or invalid track ID '%s' - skipping", item))
+		}
+	}
+
+	return exclusion
+}
+
 // ShowHelp displays the help message
 func ShowHelp() {
 	format.PrintUsageSection("Usage", `  subscalpelmkv [OPTIONS] <file>
@@ -176,7 +259,12 @@ func ShowHelp() {
 	                            Track IDs: specific track IDs (14,16,18)
 	                            Subtitle formats: srt, ass, ssa, sup, sub, vtt, usf, etc.
 	                            Mixed: combine all types (e.g., 'eng,14,srt,sup')
-	                            If not specified, all subtitle tracks will be extracted`)
+	                            If not specified, all subtitle tracks will be extracted
+	 -e, --exclude <exclusion>  Exclude subtitle tracks by language codes, track IDs,
+	                            and/or subtitle formats. Use comma-separated values.
+	                            Same format as --select. Exclusions are applied after
+	                            selections, allowing you to exclude specific tracks from
+	                            your selection (e.g., 'chi,15,sup')`)
 
 	format.PrintUsageSection("Output Options", `  -o, --output-dir [dir]     Output directory for extracted subtitle files
                              (default: same directory as input file)
@@ -199,6 +287,9 @@ func ShowHelp() {
 	format.PrintExample("subscalpelmkv -x video.mkv -s srt,ass")
 	format.PrintExample("subscalpelmkv -x video.mkv -s sup")
 	format.PrintExample("subscalpelmkv -x video.mkv -s eng,14,srt,sup")
+	format.PrintExample("subscalpelmkv -x video.mkv -e chi,kor")
+	format.PrintExample("subscalpelmkv -x video.mkv -s eng,spa -e sup")
+	format.PrintExample("subscalpelmkv -x video.mkv -e 15,17,sup")
 	format.PrintExample("subscalpelmkv -b \"*.mkv\" -s eng")
 	format.PrintExample("subscalpelmkv -b \"Season 1/*.mkv\" -s eng,spa")
 	format.PrintExample("subscalpelmkv -b \"/path/to/movies/*.mkv\" -o ./subtitles")
@@ -365,7 +456,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 // HandleDragAndDropMode handles the interactive drag-and-drop mode (backward compatibility)
 func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, string, bool) error) error {
 	// Create a wrapper function that adds default output config
-	wrapperFunc := func(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
+	wrapperFunc := func(inputFileName, languageFilter, exclusionFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 		return processFileFunc(inputFileName, languageFilter, showFilterMessage)
 	}
 
@@ -379,7 +470,7 @@ func HandleDragAndDropMode(inputFileName string, processFileFunc func(string, st
 }
 
 // HandleDragAndDropModeWithConfig handles the interactive drag-and-drop mode with output configuration
-func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, bool, model.OutputConfig, bool) error, outputConfig model.OutputConfig) error {
+func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(string, string, string, bool, model.OutputConfig, bool) error, outputConfig model.OutputConfig) error {
 	format.PrintInfo(fmt.Sprintf("Processing file: %s", inputFileName))
 
 	// Get track information to show available subtitle tracks
@@ -410,7 +501,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 
 	extractAll := AskUserConfirmation()
 
-	var languageFilter string
+	var languageFilter, exclusionFilter string
 	if !extractAll {
 		selectionInput := AskTrackSelection()
 		selection := ParseTrackSelection(selectionInput)
@@ -420,6 +511,21 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			return nil
+		}
+
+		// Ask for exclusions after selection
+		exclusionInput := AskTrackExclusion()
+		if exclusionInput != "" {
+			exclusion := ParseTrackExclusion(exclusionInput)
+			
+			// Convert exclusion to comma-separated string
+			var exclusionParts []string
+			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
+			for _, trackNum := range exclusion.TrackNumbers {
+				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
+			}
+			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
+			exclusionFilter = strings.Join(exclusionParts, ",")
 		}
 
 		// Convert to comma-separated string for processFile function (backward compatibility)
@@ -444,15 +550,71 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 			messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ",")))
 		}
 
+		// Build combined extraction message with selections and exclusions
+		var finalMessage string
 		if len(messageParts) > 0 {
-			format.PrintInfo(fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", ")))
+			if exclusionFilter != "" {
+				exclusion := ParseTrackExclusion(exclusionFilter)
+				var exclusionMsgParts []string
+				if len(exclusion.LanguageCodes) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+				}
+				if len(exclusion.TrackNumbers) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+				}
+				if len(exclusion.FormatFilters) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+				}
+				
+				if len(exclusionMsgParts) > 0 {
+					finalMessage = fmt.Sprintf("Extracting tracks for %s, excluding %s", strings.Join(messageParts, ", "), strings.Join(exclusionMsgParts, ", "))
+				} else {
+					finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
+				}
+			} else {
+				finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
+			}
+			format.PrintInfo(finalMessage)
 		}
 	} else {
-		format.PrintInfo("Extracting all subtitle tracks...")
+		// Ask for exclusions even when extracting all tracks
+		exclusionInput := AskTrackExclusion()
+		if exclusionInput != "" {
+			exclusion := ParseTrackExclusion(exclusionInput)
+			
+			// Convert exclusion to comma-separated string
+			var exclusionParts []string
+			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
+			for _, trackNum := range exclusion.TrackNumbers {
+				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
+			}
+			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
+			exclusionFilter = strings.Join(exclusionParts, ",")
+			
+			// Show exclusion message
+			var exclusionMsgParts []string
+			if len(exclusion.LanguageCodes) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+			}
+			if len(exclusion.TrackNumbers) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+			}
+			if len(exclusion.FormatFilters) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+			}
+			
+			if len(exclusionMsgParts) > 0 {
+				format.PrintInfo(fmt.Sprintf("Extracting all tracks except %s", strings.Join(exclusionMsgParts, ", ")))
+			} else {
+				format.PrintInfo("Extracting all subtitle tracks...")
+			}
+		} else {
+			format.PrintInfo("Extracting all subtitle tracks...")
+		}
 	}
 	fmt.Println()
 
-	err = processFileFunc(inputFileName, languageFilter, false, outputConfig, false)
+	err = processFileFunc(inputFileName, languageFilter, exclusionFilter, false, outputConfig, false)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
 		fmt.Println("Press Enter to exit...")

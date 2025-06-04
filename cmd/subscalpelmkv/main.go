@@ -24,7 +24,7 @@ const (
 )
 
 // processFile handles the actual subtitle extraction logic
-func processFile(inputFileName, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
+func processFile(inputFileName, languageFilter, exclusionFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 	var selection model.TrackSelection
 	if languageFilter != "" {
 		selection = cli.ParseTrackSelection(languageFilter)
@@ -46,6 +46,27 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		}
 	} else if showFilterMessage {
 		format.PrintInfo("No filter - muxing and extracting all subtitle tracks")
+	}
+
+	// Parse exclusions if provided
+	if exclusionFilter != "" {
+		selection.Exclusions = cli.ParseTrackExclusion(exclusionFilter)
+		if showFilterMessage {
+			var exclusionParts []string
+			if len(selection.Exclusions.LanguageCodes) > 0 {
+				exclusionParts = append(exclusionParts, fmt.Sprintf("languages %v", selection.Exclusions.LanguageCodes))
+			}
+			if len(selection.Exclusions.TrackNumbers) > 0 {
+				exclusionParts = append(exclusionParts, fmt.Sprintf("track IDs %v", selection.Exclusions.TrackNumbers))
+			}
+			if len(selection.Exclusions.FormatFilters) > 0 {
+				exclusionParts = append(exclusionParts, fmt.Sprintf("formats %v", selection.Exclusions.FormatFilters))
+			}
+
+			if len(exclusionParts) > 0 {
+				format.PrintFilter("Track exclusions", strings.Join(exclusionParts, ", "))
+			}
+		}
 	}
 
 	if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
@@ -174,7 +195,7 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 }
 
 // processBatch handles batch processing of multiple MKV files
-func processBatch(pattern, languageFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
+func processBatch(pattern, languageFilter, exclusionFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 	files, err := filepath.Glob(pattern)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Invalid glob pattern: %v", err))
@@ -228,7 +249,7 @@ func processBatch(pattern, languageFilter string, showFilterMessage bool, output
 	for i, file := range mkvFiles {
 		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(mkvFiles), filepath.Base(file)))
 		
-		err := processFile(file, languageFilter, false, outputConfig, dryRun)
+		err := processFile(file, languageFilter, exclusionFilter, false, outputConfig, dryRun)
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
 			errorCount++
@@ -315,7 +336,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	// Ask user if they want to extract all tracks or make a selection
 	extractAll := cli.AskUserConfirmation()
 	
-	var languageFilter string
+	var languageFilter, exclusionFilter string
 	if !extractAll {
 		selectionInput := cli.AskTrackSelection()
 		selection := cli.ParseTrackSelection(selectionInput)
@@ -325,6 +346,21 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			return nil
+		}
+
+		// Ask for exclusions after selection
+		exclusionInput := cli.AskTrackExclusion()
+		if exclusionInput != "" {
+			exclusion := cli.ParseTrackExclusion(exclusionInput)
+			
+			// Convert exclusion to comma-separated string
+			var exclusionParts []string
+			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
+			for _, trackNum := range exclusion.TrackNumbers {
+				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
+			}
+			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
+			exclusionFilter = strings.Join(exclusionParts, ",")
 		}
 		
 		// Convert to comma-separated string for processFile function
@@ -348,11 +384,67 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 			messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ",")))
 		}
 		
+		// Build combined extraction message with selections and exclusions
+		var finalMessage string
 		if len(messageParts) > 0 {
-			format.PrintInfo(fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", ")))
+			if exclusionFilter != "" {
+				exclusion := cli.ParseTrackExclusion(exclusionFilter)
+				var exclusionMsgParts []string
+				if len(exclusion.LanguageCodes) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+				}
+				if len(exclusion.TrackNumbers) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+				}
+				if len(exclusion.FormatFilters) > 0 {
+					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+				}
+				
+				if len(exclusionMsgParts) > 0 {
+					finalMessage = fmt.Sprintf("Extracting tracks for %s, excluding %s", strings.Join(messageParts, ", "), strings.Join(exclusionMsgParts, ", "))
+				} else {
+					finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
+				}
+			} else {
+				finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
+			}
+			format.PrintInfo(finalMessage)
 		}
 	} else {
-		format.PrintInfo("Extracting all subtitle tracks from each file...")
+		// Ask for exclusions even when extracting all tracks
+		exclusionInput := cli.AskTrackExclusion()
+		if exclusionInput != "" {
+			exclusion := cli.ParseTrackExclusion(exclusionInput)
+			
+			// Convert exclusion to comma-separated string
+			var exclusionParts []string
+			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
+			for _, trackNum := range exclusion.TrackNumbers {
+				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
+			}
+			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
+			exclusionFilter = strings.Join(exclusionParts, ",")
+			
+			// Show exclusion message
+			var exclusionMsgParts []string
+			if len(exclusion.LanguageCodes) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+			}
+			if len(exclusion.TrackNumbers) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+			}
+			if len(exclusion.FormatFilters) > 0 {
+				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+			}
+			
+			if len(exclusionMsgParts) > 0 {
+				format.PrintInfo(fmt.Sprintf("Extracting all tracks except %s", strings.Join(exclusionMsgParts, ", ")))
+			} else {
+				format.PrintInfo("Extracting all subtitle tracks from each file...")
+			}
+		} else {
+			format.PrintInfo("Extracting all subtitle tracks from each file...")
+		}
 	}
 	fmt.Println()
 	
@@ -378,7 +470,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	for i, file := range validFiles {
 		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(validFiles), filepath.Base(file)))
 		
-		err := processFile(file, languageFilter, false, outputConfig, false)
+		err := processFile(file, languageFilter, exclusionFilter, false, outputConfig, false)
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
 			errorCount++
@@ -574,6 +666,7 @@ func main() {
 		Batch          string `short:"b" long:"batch" description:"Extract subtitles from multiple MKV files using glob pattern (e.g., '*.mkv', 'Season 1/*.mkv')"`
 		Info           string `short:"i" long:"info" description:"Display subtitle track information for MKV file"`
 		Select         string `short:"s" long:"select" description:"Mixed selection of language codes and track IDs (e.g., 'eng,14,spa,16')"`
+		Exclude        string `short:"e" long:"exclude" description:"Mixed exclusion of language codes, track IDs, and formats (e.g., 'chi,15,sup')"`
 		OutputDir      string `short:"o" long:"output-dir" description:"Output directory for extracted subtitle files. If not specified, uses the same directory as the input file"`
 		OutputTemplate string `short:"f" long:"format" description:"Custom filename template with placeholders: {basename}, {language}, {trackno}, {trackname}, {forced}, {default}, {extension}"`
 		DryRun         bool   `short:"d" long:"dry-run" description:"Show what would be extracted without performing extraction"`
@@ -624,6 +717,18 @@ func main() {
 			selection := cli.ParseTrackSelection(flags.Select)
 			cliFlags.Languages = selection.LanguageCodes
 		}
+		
+		// Parse exclusions from Exclude flag if provided
+		if flags.Exclude != "" {
+			exclusion := cli.ParseTrackExclusion(flags.Exclude)
+			var exclusionParts []string
+			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
+			for _, trackNum := range exclusion.TrackNumbers {
+				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
+			}
+			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
+			cliFlags.Exclusions = exclusionParts
+		}
 
 		appliedConfig = appliedConfig.MergeWithCLI(cliFlags)
 
@@ -636,6 +741,9 @@ func main() {
 		}
 		if flags.Select == "" && len(appliedConfig.Languages) > 0 {
 			flags.Select = strings.Join(appliedConfig.Languages, ",")
+		}
+		if flags.Exclude == "" && len(appliedConfig.Exclusions) > 0 {
+			flags.Exclude = strings.Join(appliedConfig.Exclusions, ",")
 		}
 	}
 
@@ -666,7 +774,7 @@ func main() {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
 
-		err := processFile(inputFileName, selectionFilter, true, outputConfig, flags.DryRun)
+		err := processFile(inputFileName, selectionFilter, flags.Exclude, true, outputConfig, flags.DryRun)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
@@ -690,7 +798,7 @@ func main() {
 			outputConfig.Template = model.DefaultOutputTemplate
 		}
 
-		err := processBatch(pattern, selectionFilter, true, outputConfig, flags.DryRun)
+		err := processBatch(pattern, selectionFilter, flags.Exclude, true, outputConfig, flags.DryRun)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
