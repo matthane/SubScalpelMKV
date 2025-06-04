@@ -47,8 +47,8 @@ func processFile(inputFileName, languageFilter string, showFilterMessage bool, o
 		format.PrintInfo("No filter - muxing and extracting all subtitle tracks")
 	}
 
-	if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
-		format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
+	if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
+		format.PrintError(fmt.Sprintf("File does not exist: %s", inputFileName))
 		return statErr
 	}
 	if !util.IsMKVFile(inputFileName) {
@@ -403,15 +403,31 @@ func main() {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		// Check if we have multiple separate files vs one file with spaces
 		var validMKVFiles []string
+		var directories []string
 		
-		// First, try each argument as a separate file
+		// First, check each argument
 		for _, arg := range args {
-			if info, err := os.Stat(arg); err == nil && !info.IsDir() && util.IsMKVFile(arg) {
-				validMKVFiles = append(validMKVFiles, arg)
+			if info, err := os.Stat(arg); err == nil {
+				if info.IsDir() {
+					directories = append(directories, arg)
+				} else if util.IsMKVFile(arg) {
+					validMKVFiles = append(validMKVFiles, arg)
+				}
 			}
 		}
 		
-		// If we found multiple valid MKV files, handle as batch drag-and-drop
+		// Process any directories to find MKV files
+		for _, dir := range directories {
+			format.PrintInfo(fmt.Sprintf("Scanning directory: %s", dir))
+			files, err := util.FindMKVFilesInDirectory(dir)
+			if err != nil {
+				format.PrintWarning(fmt.Sprintf("Error scanning directory %s: %v", dir, err))
+				continue
+			}
+			validMKVFiles = append(validMKVFiles, files...)
+		}
+		
+		// If we found multiple valid MKV files (from files or directories), handle as batch
 		if len(validMKVFiles) > 1 {
 			defaultOutputConfig := model.OutputConfig{
 				OutputDir: "",
@@ -425,16 +441,68 @@ func main() {
 			os.Exit(ErrCodeSuccess)
 		}
 		
-		// If we found exactly one valid file, or no valid separate files,
-		// try the traditional approach (joining with spaces for filenames with spaces)
+		// If we found exactly one valid file, process it
+		if len(validMKVFiles) == 1 {
+			defaultOutputConfig := model.OutputConfig{
+				OutputDir: "",
+				Template:  model.DefaultOutputTemplate,
+				CreateDir: false,
+			}
+			err := cli.HandleDragAndDropModeWithConfig(validMKVFiles[0], processFile, defaultOutputConfig)
+			if err != nil {
+				os.Exit(ErrCodeFailure)
+			}
+			os.Exit(ErrCodeSuccess)
+		}
+		
+		// If no valid files found, try the traditional approach (joining with spaces for filenames with spaces)
 		inputFileName := strings.Join(args, " ")
 		
-		if ifs, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) || ifs.IsDir() {
-			format.PrintError(fmt.Sprintf("File does not exist or is a directory: %s", inputFileName))
+		if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
+			format.PrintError(fmt.Sprintf("File does not exist: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
+		
+		// Check if it's a directory
+		if info, _ := os.Stat(inputFileName); info.IsDir() {
+			format.PrintInfo(fmt.Sprintf("Scanning directory: %s", inputFileName))
+			files, err := util.FindMKVFilesInDirectory(inputFileName)
+			if err != nil {
+				format.PrintError(fmt.Sprintf("Error scanning directory: %v", err))
+				fmt.Println("Press Enter to exit...")
+				fmt.Scanln()
+				os.Exit(ErrCodeFailure)
+			}
+			
+			if len(files) == 0 {
+				format.PrintError("No MKV files found in the directory")
+				fmt.Println("Press Enter to exit...")
+				fmt.Scanln()
+				os.Exit(ErrCodeFailure)
+			}
+			
+			defaultOutputConfig := model.OutputConfig{
+				OutputDir: "",
+				Template:  model.DefaultOutputTemplate,
+				CreateDir: false,
+			}
+			
+			if len(files) == 1 {
+				err := cli.HandleDragAndDropModeWithConfig(files[0], processFile, defaultOutputConfig)
+				if err != nil {
+					os.Exit(ErrCodeFailure)
+				}
+			} else {
+				err := handleBatchDragAndDrop(files, defaultOutputConfig)
+				if err != nil {
+					os.Exit(ErrCodeFailure)
+				}
+			}
+			os.Exit(ErrCodeSuccess)
+		}
+		
 		if !util.IsMKVFile(inputFileName) {
 			format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")

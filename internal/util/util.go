@@ -212,3 +212,26 @@ func ResetProgressBar() {
 func ParseProgressLine(line string) (int, bool) {
 	return progress.ParseProgressLine(line)
 }
+
+// FindMKVFilesInDirectory recursively finds all MKV files in a directory
+func FindMKVFilesInDirectory(dir string) ([]string, error) {
+	var mkvFiles []string
+	
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Skip files/directories with errors
+		}
+		
+		if !info.IsDir() && IsMKVFile(path) {
+			mkvFiles = append(mkvFiles, path)
+		}
+		
+		return nil
+	})
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	return mkvFiles, nil
+}
