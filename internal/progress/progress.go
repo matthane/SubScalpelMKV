@@ -81,8 +81,8 @@ func renderProgressBar(percentage int) {
 	// Build the progress line
 	var progressLine strings.Builder
 	
-	// Start with box border
-	progressLine.WriteString("│ ")
+	// Start with indentation to match other lines
+	progressLine.WriteString("  ")
 	progressLine.WriteString(format.InfoColor.Sprint("►"))
 	progressLine.WriteString(" Processing: ")
 	
@@ -108,16 +108,6 @@ func renderProgressBar(percentage int) {
 	elapsed := time.Since(startTime)
 	elapsedStr := formatDuration(elapsed)
 	progressLine.WriteString(format.BaseDim.Sprintf(" • %s", elapsedStr))
-	
-	// Calculate visible length for padding
-	// 2 (border) + 1 (icon) + 12 (" Processing: ") + 1 ([) + 35 (bar) + 1 (]) + 5 (percentage) + 3 (" • ") + len(elapsed)
-	visibleLen := 2 + 1 + 12 + 1 + actualBarWidth + 1 + 5 + 3 + len(elapsedStr)
-	padding := format.BoxWidth - visibleLen - 2
-	
-	if padding > 0 {
-		progressLine.WriteString(strings.Repeat(" ", padding))
-	}
-	progressLine.WriteString(" │")
 	
 	// Print with carriage return to overwrite and clear to end of line
 	fmt.Print("\r" + progressLine.String() + "\033[K")
