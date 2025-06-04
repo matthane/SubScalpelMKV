@@ -501,120 +501,20 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 
 	extractAll := AskUserConfirmation()
 
-	var languageFilter, exclusionFilter string
-	if !extractAll {
-		selectionInput := AskTrackSelection()
-		selection := ParseTrackSelection(selectionInput)
+	// Use the shared function for processing selection and exclusion
+	selectionResult, err := ProcessSelectionAndExclusion(extractAll)
+	if err != nil {
+		fmt.Println("Press Enter to exit...")
+		fmt.Scanln()
+		return nil
+	}
 
-		if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 && len(selection.FormatFilters) == 0 {
-			format.PrintWarning("No valid language codes, track IDs, or format filters provided. Exiting.")
-			fmt.Println("Press Enter to exit...")
-			fmt.Scanln()
-			return nil
-		}
-
-		// Ask for exclusions after selection
-		exclusionInput := AskTrackExclusion()
-		if exclusionInput != "" {
-			exclusion := ParseTrackExclusion(exclusionInput)
-			
-			// Convert exclusion to comma-separated string
-			var exclusionParts []string
-			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
-			for _, trackNum := range exclusion.TrackNumbers {
-				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
-			}
-			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
-			exclusionFilter = strings.Join(exclusionParts, ",")
-		}
-
-		// Convert to comma-separated string for processFile function (backward compatibility)
-		// Combine language codes, track numbers, and format filters into a single filter string
-		var filterParts []string
-		filterParts = append(filterParts, selection.LanguageCodes...)
-		for _, trackNum := range selection.TrackNumbers {
-			filterParts = append(filterParts, strconv.Itoa(trackNum))
-		}
-		filterParts = append(filterParts, selection.FormatFilters...)
-		languageFilter = strings.Join(filterParts, ",")
-
-		// Build extraction message
-		var messageParts []string
-		if len(selection.LanguageCodes) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ",")))
-		}
-		if len(selection.TrackNumbers) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("track IDs: %v", selection.TrackNumbers))
-		}
-		if len(selection.FormatFilters) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ",")))
-		}
-
-		// Build combined extraction message with selections and exclusions
-		var finalMessage string
-		if len(messageParts) > 0 {
-			if exclusionFilter != "" {
-				exclusion := ParseTrackExclusion(exclusionFilter)
-				var exclusionMsgParts []string
-				if len(exclusion.LanguageCodes) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
-				}
-				if len(exclusion.TrackNumbers) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
-				}
-				if len(exclusion.FormatFilters) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
-				}
-				
-				if len(exclusionMsgParts) > 0 {
-					finalMessage = fmt.Sprintf("Extracting tracks for %s, excluding %s", strings.Join(messageParts, ", "), strings.Join(exclusionMsgParts, ", "))
-				} else {
-					finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
-				}
-			} else {
-				finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
-			}
-			format.PrintInfo(finalMessage)
-		}
-	} else {
-		// Ask for exclusions even when extracting all tracks
-		exclusionInput := AskTrackExclusion()
-		if exclusionInput != "" {
-			exclusion := ParseTrackExclusion(exclusionInput)
-			
-			// Convert exclusion to comma-separated string
-			var exclusionParts []string
-			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
-			for _, trackNum := range exclusion.TrackNumbers {
-				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
-			}
-			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
-			exclusionFilter = strings.Join(exclusionParts, ",")
-			
-			// Show exclusion message
-			var exclusionMsgParts []string
-			if len(exclusion.LanguageCodes) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
-			}
-			if len(exclusion.TrackNumbers) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
-			}
-			if len(exclusion.FormatFilters) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
-			}
-			
-			if len(exclusionMsgParts) > 0 {
-				format.PrintInfo(fmt.Sprintf("Extracting all tracks except %s", strings.Join(exclusionMsgParts, ", ")))
-			} else {
-				format.PrintInfo("Extracting all subtitle tracks...")
-			}
-		} else {
-			format.PrintInfo("Extracting all subtitle tracks...")
-		}
+	if selectionResult.Message != "" {
+		format.PrintInfo(selectionResult.Message)
 	}
 	fmt.Println()
 
-	err = processFileFunc(inputFileName, languageFilter, exclusionFilter, false, outputConfig, false)
+	err = processFileFunc(inputFileName, selectionResult.LanguageFilter, selectionResult.ExclusionFilter, false, outputConfig, false)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
 		fmt.Println("Press Enter to exit...")

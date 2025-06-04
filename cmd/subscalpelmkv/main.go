@@ -10,6 +10,7 @@ import (
 
 	"github.com/devfacet/gocmd/v3"
 
+	"subscalpelmkv/internal/batch"
 	"subscalpelmkv/internal/cli"
 	"subscalpelmkv/internal/config"
 	"subscalpelmkv/internal/format"
@@ -208,73 +209,36 @@ func processBatch(pattern, languageFilter, exclusionFilter string, showFilterMes
 	}
 
 	// Filter to only MKV files
-	var mkvFiles []string
-	for _, file := range files {
-		if info, err := os.Stat(file); err == nil && !info.IsDir() && util.IsMKVFile(file) {
-			mkvFiles = append(mkvFiles, file)
-		}
-	}
-
-	if len(mkvFiles) == 0 {
+	mkvFiles, err := util.ValidateAndFilterMKVFiles(files)
+	if err != nil {
 		format.PrintError(fmt.Sprintf("No MKV files found matching pattern: %s", pattern))
-		return errors.New("no MKV files found")
+		return err
 	}
 
 	format.PrintInfo(fmt.Sprintf("Found %d MKV file(s) to process", len(mkvFiles)))
 	
 	if showFilterMessage && languageFilter != "" {
-		var selection model.TrackSelection = cli.ParseTrackSelection(languageFilter)
-		var filterParts []string
-		if len(selection.LanguageCodes) > 0 {
-			filterParts = append(filterParts, fmt.Sprintf("languages %v", selection.LanguageCodes))
-		}
-		if len(selection.TrackNumbers) > 0 {
-			filterParts = append(filterParts, fmt.Sprintf("track IDs %v", selection.TrackNumbers))
-		}
-		if len(selection.FormatFilters) > 0 {
-			filterParts = append(filterParts, fmt.Sprintf("formats %v", selection.FormatFilters))
-		}
-
-		if len(filterParts) > 0 {
-			format.PrintFilter("Batch filter", strings.Join(filterParts, ", "))
+		selection := cli.ParseTrackSelection(languageFilter)
+		exclusion := cli.ParseTrackExclusion(exclusionFilter)
+		selectionResult := cli.ProcessSelectionForBatch(selection, exclusion)
+		if selectionResult.Message != "" {
+			format.PrintFilter("Batch filter", selectionResult.Message)
 		}
 	} else if showFilterMessage {
 		format.PrintInfo("No filter - extracting all subtitle tracks from each file")
 	}
 
-	// Process each file
-	successCount := 0
-	errorCount := 0
-	
-	for i, file := range mkvFiles {
-		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(mkvFiles), filepath.Base(file)))
-		
-		err := processFile(file, languageFilter, exclusionFilter, false, outputConfig, dryRun)
-		if err != nil {
-			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
-			errorCount++
-		} else {
-			format.PrintSuccess(fmt.Sprintf("Successfully processed %s", filepath.Base(file)))
-			successCount++
-		}
-		
-		// Add spacing between files except for the last one
-		if i < len(mkvFiles)-1 {
-			fmt.Println()
-		}
+	// Use the new batch processor
+	processor := batch.NewProcessor(mkvFiles, outputConfig, dryRun)
+	result, err := processor.Process(processFile, languageFilter, exclusionFilter)
+	if err != nil {
+		return err
 	}
 
-	// Print summary
-	fmt.Println()
-	format.PrintSubSection("Batch Processing Summary")
-	format.PrintInfo(fmt.Sprintf("Total files: %d", len(mkvFiles)))
-	format.PrintSuccess(fmt.Sprintf("Successfully processed: %d", successCount))
-	if errorCount > 0 {
-		format.PrintError(fmt.Sprintf("Failed to process: %d", errorCount))
-	}
+	processor.PrintSummary(result)
 
-	if errorCount > 0 {
-		return fmt.Errorf("batch processing completed with %d errors", errorCount)
+	if result.ErrorCount > 0 {
+		return fmt.Errorf("batch processing completed with %d errors", result.ErrorCount)
 	}
 
 	return nil
@@ -285,50 +249,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	format.PrintInfo(fmt.Sprintf("Batch drag-and-drop detected: %d MKV files", len(mkvFiles)))
 	
 	// Analyze each file to gather subtitle information
-	var batchFileInfos []model.BatchFileInfo
-	for _, file := range mkvFiles {
-		fileInfo := model.BatchFileInfo{
-			FileName: filepath.Base(file),
-			FilePath: file,
-		}
-		
-		// Try to get track information for this file
-		mkvInfo, err := mkv.GetTrackInfo(file)
-		if err != nil {
-			fileInfo.HasError = true
-			fileInfo.ErrorMessage = fmt.Sprintf("Failed to analyze: %v", err)
-		} else {
-			// Count subtitle tracks and gather language codes and formats
-			languageSet := make(map[string]bool)
-			formatSet := make(map[string]bool)
-			
-			for _, track := range mkvInfo.Tracks {
-				if track.Type == "subtitles" {
-					fileInfo.SubtitleCount++
-					
-					// Collect language codes
-					if track.Properties.Language != "" {
-						languageSet[track.Properties.Language] = true
-					}
-					
-					// Collect formats
-					if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
-						formatSet[ext] = true
-					}
-				}
-			}
-			
-			// Convert sets to slices
-			for lang := range languageSet {
-				fileInfo.LanguageCodes = append(fileInfo.LanguageCodes, lang)
-			}
-			for format := range formatSet {
-				fileInfo.SubtitleFormats = append(fileInfo.SubtitleFormats, format)
-			}
-		}
-		
-		batchFileInfos = append(batchFileInfos, fileInfo)
-	}
+	batchFileInfos := batch.AnalyzeFiles(mkvFiles)
 	
 	// Display all files using the same visual style as subtitle tracks
 	cli.DisplayBatchFiles(batchFileInfos)
@@ -336,125 +257,21 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	// Ask user if they want to extract all tracks or make a selection
 	extractAll := cli.AskUserConfirmation()
 	
-	var languageFilter, exclusionFilter string
-	if !extractAll {
-		selectionInput := cli.AskTrackSelection()
-		selection := cli.ParseTrackSelection(selectionInput)
-		
-		if len(selection.LanguageCodes) == 0 && len(selection.TrackNumbers) == 0 && len(selection.FormatFilters) == 0 {
-			format.PrintWarning("No valid language codes, track IDs, or format filters provided. Exiting.")
-			fmt.Println("Press Enter to exit...")
-			fmt.Scanln()
-			return nil
-		}
-
-		// Ask for exclusions after selection
-		exclusionInput := cli.AskTrackExclusion()
-		if exclusionInput != "" {
-			exclusion := cli.ParseTrackExclusion(exclusionInput)
-			
-			// Convert exclusion to comma-separated string
-			var exclusionParts []string
-			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
-			for _, trackNum := range exclusion.TrackNumbers {
-				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
-			}
-			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
-			exclusionFilter = strings.Join(exclusionParts, ",")
-		}
-		
-		// Convert to comma-separated string for processFile function
-		var filterParts []string
-		filterParts = append(filterParts, selection.LanguageCodes...)
-		for _, trackNum := range selection.TrackNumbers {
-			filterParts = append(filterParts, strconv.Itoa(trackNum))
-		}
-		filterParts = append(filterParts, selection.FormatFilters...)
-		languageFilter = strings.Join(filterParts, ",")
-		
-		// Build extraction message
-		var messageParts []string
-		if len(selection.LanguageCodes) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ",")))
-		}
-		if len(selection.TrackNumbers) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("track IDs: %v", selection.TrackNumbers))
-		}
-		if len(selection.FormatFilters) > 0 {
-			messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ",")))
-		}
-		
-		// Build combined extraction message with selections and exclusions
-		var finalMessage string
-		if len(messageParts) > 0 {
-			if exclusionFilter != "" {
-				exclusion := cli.ParseTrackExclusion(exclusionFilter)
-				var exclusionMsgParts []string
-				if len(exclusion.LanguageCodes) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
-				}
-				if len(exclusion.TrackNumbers) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
-				}
-				if len(exclusion.FormatFilters) > 0 {
-					exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
-				}
-				
-				if len(exclusionMsgParts) > 0 {
-					finalMessage = fmt.Sprintf("Extracting tracks for %s, excluding %s", strings.Join(messageParts, ", "), strings.Join(exclusionMsgParts, ", "))
-				} else {
-					finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
-				}
-			} else {
-				finalMessage = fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
-			}
-			format.PrintInfo(finalMessage)
-		}
-	} else {
-		// Ask for exclusions even when extracting all tracks
-		exclusionInput := cli.AskTrackExclusion()
-		if exclusionInput != "" {
-			exclusion := cli.ParseTrackExclusion(exclusionInput)
-			
-			// Convert exclusion to comma-separated string
-			var exclusionParts []string
-			exclusionParts = append(exclusionParts, exclusion.LanguageCodes...)
-			for _, trackNum := range exclusion.TrackNumbers {
-				exclusionParts = append(exclusionParts, strconv.Itoa(trackNum))
-			}
-			exclusionParts = append(exclusionParts, exclusion.FormatFilters...)
-			exclusionFilter = strings.Join(exclusionParts, ",")
-			
-			// Show exclusion message
-			var exclusionMsgParts []string
-			if len(exclusion.LanguageCodes) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
-			}
-			if len(exclusion.TrackNumbers) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
-			}
-			if len(exclusion.FormatFilters) > 0 {
-				exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
-			}
-			
-			if len(exclusionMsgParts) > 0 {
-				format.PrintInfo(fmt.Sprintf("Extracting all tracks except %s", strings.Join(exclusionMsgParts, ", ")))
-			} else {
-				format.PrintInfo("Extracting all subtitle tracks from each file...")
-			}
-		} else {
-			format.PrintInfo("Extracting all subtitle tracks from each file...")
-		}
+	// Process selection and exclusion using the shared function
+	selectionResult, err := cli.ProcessSelectionAndExclusion(extractAll)
+	if err != nil {
+		fmt.Println("Press Enter to exit...")
+		fmt.Scanln()
+		return nil
+	}
+	
+	if selectionResult.Message != "" {
+		format.PrintInfo(selectionResult.Message)
 	}
 	fmt.Println()
 	
 	// Filter out files that had analysis errors and prepare valid files for processing
-	var validFiles []string
-	for _, fileInfo := range batchFileInfos {
-		if !fileInfo.HasError {
-			validFiles = append(validFiles, fileInfo.FilePath)
-		}
-	}
+	validFiles := batch.FilterValidFiles(batchFileInfos)
 	
 	if len(validFiles) == 0 {
 		format.PrintError("No valid MKV files to process")
@@ -463,42 +280,16 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 		return fmt.Errorf("no valid files to process")
 	}
 	
-	// Process each valid file
-	successCount := 0
-	errorCount := 0
-	
-	for i, file := range validFiles {
-		format.PrintSubSection(fmt.Sprintf("Processing file %d/%d: %s", i+1, len(validFiles), filepath.Base(file)))
-		
-		err := processFile(file, languageFilter, exclusionFilter, false, outputConfig, false)
-		if err != nil {
-			format.PrintError(fmt.Sprintf("Failed to process %s: %v", file, err))
-			errorCount++
-		} else {
-			format.PrintSuccess(fmt.Sprintf("Successfully processed %s", filepath.Base(file)))
-			successCount++
-		}
-		
-		// Add spacing between files except for the last one
-		if i < len(validFiles)-1 {
-			fmt.Println()
-		}
-	}
-	
-	// Print summary
-	fmt.Println()
-	format.PrintSubSection("Batch Processing Summary")
-	format.PrintInfo(fmt.Sprintf("Total files: %d", len(validFiles)))
-	format.PrintSuccess(fmt.Sprintf("Successfully processed: %d", successCount))
-	if errorCount > 0 {
-		format.PrintError(fmt.Sprintf("Failed to process: %d", errorCount))
-	}
+	// Use the batch processor for consistent handling
+	processor := batch.NewProcessor(validFiles, outputConfig, false)
+	result, _ := processor.Process(processFile, selectionResult.LanguageFilter, selectionResult.ExclusionFilter)
+	processor.PrintSummary(result)
 	
 	fmt.Println("Press Enter to exit...")
 	fmt.Scanln()
 	
-	if errorCount > 0 {
-		return fmt.Errorf("batch processing completed with %d errors", errorCount)
+	if result.ErrorCount > 0 {
+		return fmt.Errorf("batch processing completed with %d errors", result.ErrorCount)
 	}
 	
 	return nil
@@ -540,40 +331,19 @@ func main() {
 
 	// Detect execution mode: drag-and-drop vs CLI
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		// Check if we have multiple separate files vs one file with spaces
-		var validMKVFiles []string
-		var directories []string
-		
-		// First, check each argument
-		for _, arg := range args {
-			if info, err := os.Stat(arg); err == nil {
-				if info.IsDir() {
-					directories = append(directories, arg)
-				} else if util.IsMKVFile(arg) {
-					validMKVFiles = append(validMKVFiles, arg)
-				}
-			}
-		}
-		
-		// Process any directories to find MKV files
-		for _, dir := range directories {
-			format.PrintInfo(fmt.Sprintf("Scanning directory: %s", dir))
-			files, err := util.FindMKVFilesInDirectory(dir)
-			if err != nil {
-				format.PrintWarning(fmt.Sprintf("Error scanning directory %s: %v", dir, err))
-				continue
-			}
-			validMKVFiles = append(validMKVFiles, files...)
+		// Use the new discovery function
+		validMKVFiles, err := util.DiscoverMKVFiles(args)
+		if err != nil {
+			format.PrintError(fmt.Sprintf("Error discovering MKV files: %v", err))
+			fmt.Println("Press Enter to exit...")
+			fmt.Scanln()
+			os.Exit(ErrCodeFailure)
 		}
 		
 		// If we found multiple valid MKV files (from files or directories), handle as batch
 		if len(validMKVFiles) > 1 {
-			defaultOutputConfig := model.OutputConfig{
-				OutputDir: "",
-				Template:  model.DefaultOutputTemplate,
-				CreateDir: false,
-			}
-			err := handleBatchDragAndDrop(validMKVFiles, defaultOutputConfig)
+			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
+			err = handleBatchDragAndDrop(validMKVFiles, defaultOutputConfig)
 			if err != nil {
 				os.Exit(ErrCodeFailure)
 			}
@@ -582,12 +352,8 @@ func main() {
 		
 		// If we found exactly one valid file, process it
 		if len(validMKVFiles) == 1 {
-			defaultOutputConfig := model.OutputConfig{
-				OutputDir: "",
-				Template:  model.DefaultOutputTemplate,
-				CreateDir: false,
-			}
-			err := cli.HandleDragAndDropModeWithConfig(validMKVFiles[0], processFile, defaultOutputConfig)
+			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
+			err = cli.HandleDragAndDropModeWithConfig(validMKVFiles[0], processFile, defaultOutputConfig)
 			if err != nil {
 				os.Exit(ErrCodeFailure)
 			}
@@ -622,19 +388,15 @@ func main() {
 				os.Exit(ErrCodeFailure)
 			}
 			
-			defaultOutputConfig := model.OutputConfig{
-				OutputDir: "",
-				Template:  model.DefaultOutputTemplate,
-				CreateDir: false,
-			}
+			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
 			
 			if len(files) == 1 {
-				err := cli.HandleDragAndDropModeWithConfig(files[0], processFile, defaultOutputConfig)
+				err = cli.HandleDragAndDropModeWithConfig(files[0], processFile, defaultOutputConfig)
 				if err != nil {
 					os.Exit(ErrCodeFailure)
 				}
 			} else {
-				err := handleBatchDragAndDrop(files, defaultOutputConfig)
+				err = handleBatchDragAndDrop(files, defaultOutputConfig)
 				if err != nil {
 					os.Exit(ErrCodeFailure)
 				}
@@ -649,12 +411,8 @@ func main() {
 			os.Exit(ErrCodeFailure)
 		}
 
-		defaultOutputConfig := model.OutputConfig{
-			OutputDir: "",
-			Template:  model.DefaultOutputTemplate,
-			CreateDir: false,
-		}
-		err := cli.HandleDragAndDropModeWithConfig(inputFileName, processFile, defaultOutputConfig)
+		defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
+		err = cli.HandleDragAndDropModeWithConfig(inputFileName, processFile, defaultOutputConfig)
 		if err != nil {
 			os.Exit(ErrCodeFailure)
 		}
@@ -758,20 +516,11 @@ func main() {
 		inputFileName := flags.Extract
 		selectionFilter := cli.BuildSelectionFilter(flags.Select)
 
-		outputConfig := model.OutputConfig{
-			OutputDir: flags.OutputDir,
-			Template:  flags.OutputTemplate,
-			CreateDir: true, // Always create directory if it doesn't exist
-		}
-
-		// Handle special case where -o is used without arguments
-		if hasOutputFlagWithoutValue || flags.OutputDir == "__BASENAME_SUBTITLES__" {
-			baseName := strings.TrimSuffix(filepath.Base(inputFileName), filepath.Ext(inputFileName))
-			outputConfig.OutputDir = filepath.Join(filepath.Dir(inputFileName), baseName+"-subtitles")
-		}
-
-		if outputConfig.Template == "" {
-			outputConfig.Template = model.DefaultOutputTemplate
+		outputConfig := util.BuildOutputConfig(flags.OutputDir, flags.OutputTemplate, hasOutputFlagWithoutValue, false)
+		
+		// Resolve special output directory for single file
+		if outputConfig.OutputDir == "__BASENAME_SUBTITLES__" {
+			outputConfig.OutputDir = util.ResolveOutputDirectory(outputConfig.OutputDir, inputFileName)
 		}
 
 		err := processFile(inputFileName, selectionFilter, flags.Exclude, true, outputConfig, flags.DryRun)
@@ -782,21 +531,7 @@ func main() {
 		pattern := flags.Batch
 		selectionFilter := cli.BuildSelectionFilter(flags.Select)
 
-		outputConfig := model.OutputConfig{
-			OutputDir: flags.OutputDir,
-			Template:  flags.OutputTemplate,
-			CreateDir: true, // Always create directory if it doesn't exist
-		}
-
-		// Handle special case where -o is used without arguments
-		// For batch mode, we'll create individual {basename}-subtitles directories for each file
-		if hasOutputFlagWithoutValue || flags.OutputDir == "__BASENAME_SUBTITLES__" {
-			outputConfig.OutputDir = "BATCH_BASENAME_SUBTITLES" // Special marker for batch mode
-		}
-
-		if outputConfig.Template == "" {
-			outputConfig.Template = model.DefaultOutputTemplate
-		}
+		outputConfig := util.BuildOutputConfig(flags.OutputDir, flags.OutputTemplate, hasOutputFlagWithoutValue, true)
 
 		err := processBatch(pattern, selectionFilter, flags.Exclude, true, outputConfig, flags.DryRun)
 		if err != nil {
