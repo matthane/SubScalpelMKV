@@ -259,8 +259,28 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	// Ask user if they want to extract all tracks or make a selection
 	extractAll := cli.AskUserConfirmation()
 
+	// Collect all available track numbers from all files for validation
+	var allAvailableTracks []int
+	trackSet := make(map[int]bool)
+	for _, fileInfo := range batchFileInfos {
+		if !fileInfo.HasError {
+			// Get track info for this file
+			mkvInfo, err := mkv.GetTrackInfo(fileInfo.FilePath)
+			if err == nil {
+				for _, track := range mkvInfo.Tracks {
+					if track.Type == "subtitles" {
+						if !trackSet[track.Properties.Number] {
+							trackSet[track.Properties.Number] = true
+							allAvailableTracks = append(allAvailableTracks, track.Properties.Number)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Process selection and exclusion using the shared function
-	selectionResult, err := cli.ProcessSelectionAndExclusion(extractAll)
+	selectionResult, err := cli.ProcessSelectionAndExclusion(extractAll, allAvailableTracks)
 	if err != nil {
 		fmt.Println("Press enter to exit...")
 		fmt.Scanln()

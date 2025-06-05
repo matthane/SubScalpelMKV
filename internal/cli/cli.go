@@ -68,7 +68,6 @@ func AskTrackExclusion() string {
 	format.PrintPromptWithPlaceholder("Exclusions:", " (press enter to skip)")
 
 	input, err := reader.ReadString('\n')
-	fmt.Println()
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error reading input: %v", err))
 		return ""
@@ -502,8 +501,16 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 
 	extractAll := AskUserConfirmation()
 
+	// Extract available subtitle track numbers for validation
+	var availableTracks []int
+	for _, track := range mkvInfo.Tracks {
+		if track.Type == "subtitles" {
+			availableTracks = append(availableTracks, track.Properties.Number)
+		}
+	}
+
 	// Use the shared function for processing selection and exclusion
-	selectionResult, err := ProcessSelectionAndExclusion(extractAll)
+	selectionResult, err := ProcessSelectionAndExclusion(extractAll, availableTracks)
 	if err != nil {
 		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
