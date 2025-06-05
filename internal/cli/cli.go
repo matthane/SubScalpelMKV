@@ -18,7 +18,7 @@ func AskUserConfirmation() bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		format.PrintPrompt("Extract all tracks? Y/n (default: Y): ")
+		format.PrintPromptWithPlaceholder("Extract all tracks? Y/n:", " (press enter for yes)")
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Error reading input: %v", err))
@@ -47,7 +47,7 @@ func AskTrackSelection() string {
 	format.PrintSubSection("Track Selection")
 	format.PrintInfo("Enter selection (comma-separated):")
 	format.PrintExample("Language: eng,spa,fre  •  Track ID: 14,16,18  •  Format: srt,ass,sup  •  Mixed: eng,14,srt")
-	format.PrintPrompt("Selection: ")
+	format.PrintPromptWithPlaceholder("Selection:", " (press enter to accept all)")
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
@@ -63,9 +63,9 @@ func AskTrackExclusion() string {
 	reader := bufio.NewReader(os.Stdin)
 
 	format.PrintSubSection("Track Exclusions (Optional)")
-	format.PrintInfo("Enter exclusions (comma-separated, or press Enter to skip):")
+	format.PrintInfo("Enter exclusions (comma-separated):")
 	format.PrintExample("Language: chi,kor  •  Track ID: 15,17  •  Format: sup,sub  •  Mixed: chi,15,sup")
-	format.PrintPrompt("Exclusions: ")
+	format.PrintPromptWithPlaceholder("Exclusions:", " (press enter to skip)")
 
 	input, err := reader.ReadString('\n')
 	fmt.Println()
@@ -371,7 +371,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 					track.Properties.Default,
 				)
 			}
-			
+
 			// Add separator between tracks except for the last one
 			if i < len(mkvInfo.Tracks)-1 {
 				// Check if there are more subtitle tracks after this one
@@ -391,7 +391,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 
 	if subtitleCount == 0 {
 		noTracksMsg := "No subtitle tracks found in this file."
-		visibleLen := 2 + len(noTracksMsg) // "│ " + message
+		visibleLen := 2 + len(noTracksMsg)          // "│ " + message
 		padding := format.BoxWidth - visibleLen - 1 // -1 for space before closing border
 		format.BorderColor.Print("│ ")
 		format.WarningColor.Print(noTracksMsg)
@@ -403,45 +403,45 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 		// Calculate summary statistics
 		languageSet := make(map[string]bool)
 		formatSet := make(map[string]bool)
-		
+
 		for _, track := range mkvInfo.Tracks {
 			if track.Type == "subtitles" {
 				// Track unique languages
 				if track.Properties.Language != "" {
 					languageSet[track.Properties.Language] = true
 				}
-				
+
 				// Track unique formats
 				if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
 					formatSet[strings.ToUpper(ext)] = true
 				}
 			}
 		}
-		
+
 		// Add separator before summary
 		if subtitleCount > 0 {
 			format.DrawSeparator(format.BoxWidth)
 		}
-		
+
 		// Display summary
 		trackWord := "tracks"
 		if subtitleCount == 1 {
 			trackWord = "track"
 		}
-		
+
 		languageWord := "languages"
 		if len(languageSet) == 1 {
 			languageWord = "language"
 		}
-		
+
 		formatWord := "formats"
 		if len(formatSet) == 1 {
 			formatWord = "format"
 		}
-		
-		summaryMsg := fmt.Sprintf("%d total %s, %d %s, %d %s", 
+
+		summaryMsg := fmt.Sprintf("%d total %s, %d %s, %d %s",
 			subtitleCount, trackWord, len(languageSet), languageWord, len(formatSet), formatWord)
-		visibleLen := 2 + len(summaryMsg) // "│ " + message
+		visibleLen := 2 + len(summaryMsg)       // "│ " + message
 		padding := format.BoxWidth - visibleLen // No -1 needed for proper alignment
 		format.BorderColor.Print("│ ")
 		format.InfoColor.Print(summaryMsg)
@@ -450,7 +450,7 @@ func DisplaySubtitleTracks(mkvInfo *model.MKVInfo) {
 		}
 		format.BorderColor.Println(" │")
 	}
-	
+
 	format.DrawBoxBottom(format.BoxWidth)
 }
 
@@ -478,7 +478,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	mkvInfo, err := mkv.GetTrackInfo(inputFileName)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return err
 	}
@@ -495,7 +495,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 
 	if !hasSubtitles {
 		format.PrintWarning("No subtitle tracks found in this file.")
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return nil
 	}
@@ -505,7 +505,7 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	// Use the shared function for processing selection and exclusion
 	selectionResult, err := ProcessSelectionAndExclusion(extractAll)
 	if err != nil {
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return nil
 	}
@@ -518,12 +518,12 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	err = processFileFunc(inputFileName, selectionResult.LanguageFilter, selectionResult.ExclusionFilter, false, outputConfig, false)
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error: %v", err))
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return err
 	}
 
-	fmt.Println("Press Enter to exit...")
+	fmt.Println("Press enter to exit...")
 	fmt.Scanln()
 	return nil
 }
@@ -559,7 +559,7 @@ func ShowFileInfo(inputFileName string) error {
 // DisplayBatchFiles shows batch file information to the user in the same visual style as subtitle tracks
 func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 	format.PrintSection("Files to Process")
-	
+
 	// Use expanded view as default for batch mode
 	for i, fileInfo := range batchFiles {
 		if fileInfo.HasError {
@@ -568,14 +568,14 @@ func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 			format.ErrorColor.Print("✗")
 			fmt.Print(" ")
 			format.BaseFg.Print(fileInfo.FileName)
-			
+
 			contentLen := 2 + 2 + len(fileInfo.FileName) // "│ " + "✗ " + filename
 			padding := format.BoxWidth - contentLen
 			if padding > 0 {
 				fmt.Print(strings.Repeat(" ", padding))
 			}
 			format.BorderColor.Println(" │")
-			
+
 			// Error message on second line
 			format.BorderColor.Print("│   ")
 			format.ErrorColor.Print(fileInfo.ErrorMessage)
@@ -591,38 +591,38 @@ func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 			format.BaseHighlight.Print("▪")
 			fmt.Print(" ")
 			format.BaseFg.Print(fileInfo.FileName)
-			
+
 			contentLen := 2 + 2 + len(fileInfo.FileName) // "│ " + "▪ " + filename
 			padding := format.BoxWidth - contentLen
 			if padding > 0 {
 				fmt.Print(strings.Repeat(" ", padding))
 			}
 			format.BorderColor.Println(" │")
-			
+
 			// Always use expanded view for batch mode
 			displayExpandedFileDetails(fileInfo)
 		}
-		
+
 		// Add separator between files except for the last one
 		if i < len(batchFiles)-1 {
 			format.DrawSeparator(format.BoxWidth)
 		}
 	}
-	
+
 	// Calculate and display summary
 	validFiles := 0
 	errorFiles := 0
 	totalTracks := 0
 	languageSet := make(map[string]bool)
 	formatSet := make(map[string]bool)
-	
+
 	for _, fileInfo := range batchFiles {
 		if fileInfo.HasError {
 			errorFiles++
 		} else {
 			validFiles++
 			totalTracks += fileInfo.SubtitleCount
-			
+
 			for _, lang := range fileInfo.LanguageCodes {
 				languageSet[lang] = true
 			}
@@ -631,41 +631,41 @@ func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 			}
 		}
 	}
-	
+
 	if len(batchFiles) > 0 {
 		format.DrawSeparator(format.BoxWidth)
 	}
-	
+
 	// Display summary
 	fileWord := "files"
 	if validFiles == 1 {
 		fileWord = "file"
 	}
-	
+
 	trackWord := "tracks"
 	if totalTracks == 1 {
 		trackWord = "track"
 	}
-	
+
 	languageWord := "languages"
 	if len(languageSet) == 1 {
 		languageWord = "language"
 	}
-	
+
 	formatWord := "formats"
 	if len(formatSet) == 1 {
 		formatWord = "format"
 	}
-	
+
 	var summaryMsg string
 	if errorFiles > 0 {
-		summaryMsg = fmt.Sprintf("%d valid %s, %d total %s, %d %s, %d %s • %d errors", 
+		summaryMsg = fmt.Sprintf("%d valid %s, %d total %s, %d %s, %d %s • %d errors",
 			validFiles, fileWord, totalTracks, trackWord, len(languageSet), languageWord, len(formatSet), formatWord, errorFiles)
 	} else {
-		summaryMsg = fmt.Sprintf("%d %s, %d total %s, %d %s, %d %s", 
+		summaryMsg = fmt.Sprintf("%d %s, %d total %s, %d %s, %d %s",
 			validFiles, fileWord, totalTracks, trackWord, len(languageSet), languageWord, len(formatSet), formatWord)
 	}
-	
+
 	visibleLen := 2 + len(summaryMsg) // "│ " + message
 	padding := format.BoxWidth - visibleLen
 	format.BorderColor.Print("│ ")
@@ -674,7 +674,7 @@ func DisplayBatchFiles(batchFiles []model.BatchFileInfo) {
 		fmt.Print(strings.Repeat(" ", padding))
 	}
 	format.BorderColor.Println(" │")
-	
+
 	format.DrawBoxBottom(format.BoxWidth)
 }
 
@@ -690,27 +690,27 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 		fmt.Print(strings.Repeat(" ", trackPadding))
 	}
 	format.BorderColor.Println(" │")
-	
+
 	// Languages line (if any)
 	if len(fileInfo.LanguageCodes) > 0 {
 		// Calculate available width for content
 		prefixLen := 3 // "│   "
 		suffixLen := 2 // " │"
 		availableWidth := format.BoxWidth - prefixLen - suffixLen
-		
+
 		langLabel := "Languages: "
 		langLabelLen := len(langLabel)
-		
+
 		// Join all languages
 		allLangs := strings.Join(fileInfo.LanguageCodes, ", ")
-		
+
 		// Check if it fits in one line
-		if langLabelLen + len(allLangs) <= availableWidth {
+		if langLabelLen+len(allLangs) <= availableWidth {
 			// Single line display
 			format.BorderColor.Print("│   ")
 			format.BaseDim.Print(langLabel)
 			format.BaseAccent.Print(allLangs)
-			
+
 			lineLen := prefixLen + langLabelLen + len(allLangs)
 			langPadding := format.BoxWidth - lineLen - 1
 			if langPadding > 0 {
@@ -721,28 +721,28 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 			// Multi-line display with wrapping
 			format.BorderColor.Print("│   ")
 			format.BaseDim.Print(langLabel)
-			
+
 			// Calculate space remaining on first line
 			firstLineSpace := availableWidth - langLabelLen
-			
+
 			// Split languages into lines
 			langs := fileInfo.LanguageCodes
 			currentLine := ""
 			firstLine := true
-			
+
 			for i, lang := range langs {
 				// Add comma if not first item
 				if i > 0 {
 					lang = ", " + lang
 				}
-				
+
 				// Check if adding this language would exceed the line width
 				testLine := currentLine + lang
 				maxWidth := availableWidth - langLabelLen // Continuation lines have less space due to indentation
 				if firstLine {
 					maxWidth = firstLineSpace
 				}
-				
+
 				if len(testLine) > maxWidth && currentLine != "" {
 					// Print current line
 					if firstLine {
@@ -763,7 +763,7 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 						}
 						format.BorderColor.Println(" │")
 					}
-					
+
 					// Start new line (remove leading comma and space if present)
 					if strings.HasPrefix(lang, ", ") {
 						currentLine = lang[2:]
@@ -774,7 +774,7 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 					currentLine = testLine
 				}
 			}
-			
+
 			// Print the last line
 			if currentLine != "" {
 				if firstLine {
@@ -797,28 +797,28 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 			}
 		}
 	}
-	
+
 	// Formats line (if any)
 	if len(fileInfo.SubtitleFormats) > 0 {
 		// Calculate available width for content
 		prefixLen := 3 // "│   "
 		suffixLen := 2 // " │"
 		availableWidth := format.BoxWidth - prefixLen - suffixLen
-		
+
 		formatLabel := "Formats: "
 		formatLabelLen := len(formatLabel)
-		
+
 		// Join all formats
 		allFormats := strings.Join(fileInfo.SubtitleFormats, ", ")
 		allFormatsUpper := strings.ToUpper(allFormats)
-		
+
 		// Check if it fits in one line
-		if formatLabelLen + len(allFormatsUpper) <= availableWidth {
+		if formatLabelLen+len(allFormatsUpper) <= availableWidth {
 			// Single line display
 			format.BorderColor.Print("│   ")
 			format.BaseDim.Print(formatLabel)
 			format.CodecColor.Print(allFormatsUpper)
-			
+
 			lineLen := prefixLen + formatLabelLen + len(allFormatsUpper)
 			formatPadding := format.BoxWidth - lineLen - 1
 			if formatPadding > 0 {
@@ -829,29 +829,29 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 			// Multi-line display with wrapping
 			format.BorderColor.Print("│   ")
 			format.BaseDim.Print(formatLabel)
-			
+
 			// Calculate space remaining on first line
 			firstLineSpace := availableWidth - formatLabelLen
-			
+
 			// Split formats into lines
 			formats := fileInfo.SubtitleFormats
 			currentLine := ""
 			firstLine := true
-			
+
 			for i, fmtStr := range formats {
 				// Add comma if not first item
 				fmtUpper := strings.ToUpper(fmtStr)
 				if i > 0 {
 					fmtUpper = ", " + fmtUpper
 				}
-				
+
 				// Check if adding this format would exceed the line width
 				testLine := currentLine + fmtUpper
 				maxWidth := availableWidth - formatLabelLen // Continuation lines have less space due to indentation
 				if firstLine {
 					maxWidth = firstLineSpace
 				}
-				
+
 				if len(testLine) > maxWidth && currentLine != "" {
 					// Print current line
 					if firstLine {
@@ -872,7 +872,7 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 						}
 						format.BorderColor.Println(" │")
 					}
-					
+
 					// Start new line (remove leading comma and space if present)
 					if strings.HasPrefix(fmtUpper, ", ") {
 						currentLine = fmtUpper[2:]
@@ -883,7 +883,7 @@ func displayExpandedFileDetails(fileInfo model.BatchFileInfo) {
 					currentLine = testLine
 				}
 			}
-			
+
 			// Print the last line
 			if currentLine != "" {
 				if firstLine {

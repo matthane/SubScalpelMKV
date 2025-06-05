@@ -262,7 +262,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	// Process selection and exclusion using the shared function
 	selectionResult, err := cli.ProcessSelectionAndExclusion(extractAll)
 	if err != nil {
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return nil
 	}
@@ -277,7 +277,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 
 	if len(validFiles) == 0 {
 		format.PrintError("No valid MKV files to process")
-		fmt.Println("Press Enter to exit...")
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
 		return fmt.Errorf("no valid files to process")
 	}
@@ -287,7 +287,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	result, _ := processor.Process(processFile, selectionResult.LanguageFilter, selectionResult.ExclusionFilter)
 	processor.PrintSummary(result)
 
-	fmt.Println("Press Enter to exit...")
+	fmt.Println("Press enter to exit...")
 	fmt.Scanln()
 
 	if result.ErrorCount > 0 {
@@ -337,7 +337,7 @@ func main() {
 		validMKVFiles, err := util.DiscoverMKVFiles(args)
 		if err != nil {
 			format.PrintError(fmt.Sprintf("Error discovering MKV files: %v", err))
-			fmt.Println("Press Enter to exit...")
+			fmt.Println("Press enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
@@ -367,7 +367,7 @@ func main() {
 
 		if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
 			format.PrintError(fmt.Sprintf("File does not exist: %s", inputFileName))
-			fmt.Println("Press Enter to exit...")
+			fmt.Println("Press enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
@@ -378,14 +378,14 @@ func main() {
 			files, err := util.FindMKVFilesInDirectory(inputFileName)
 			if err != nil {
 				format.PrintError(fmt.Sprintf("Error scanning directory: %v", err))
-				fmt.Println("Press Enter to exit...")
+				fmt.Println("Press enter to exit...")
 				fmt.Scanln()
 				os.Exit(ErrCodeFailure)
 			}
 
 			if len(files) == 0 {
 				format.PrintError("No MKV files found in the directory")
-				fmt.Println("Press Enter to exit...")
+				fmt.Println("Press enter to exit...")
 				fmt.Scanln()
 				os.Exit(ErrCodeFailure)
 			}
@@ -408,7 +408,7 @@ func main() {
 
 		if !util.IsMKVFile(inputFileName) {
 			format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
-			fmt.Println("Press Enter to exit...")
+			fmt.Println("Press enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}

@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/model"
 )
 
@@ -27,21 +26,32 @@ func ProcessSelectionAndExclusion(extractAll bool) (*SelectionResult, error) {
 		result.Selection = ParseTrackSelection(selectionInput)
 
 		if len(result.Selection.LanguageCodes) == 0 && len(result.Selection.TrackNumbers) == 0 && len(result.Selection.FormatFilters) == 0 {
-			format.PrintWarning("No valid language codes, track IDs, or format filters provided. Exiting.")
-			return nil, fmt.Errorf("no valid selection criteria")
-		}
+			// Empty input means accept all tracks - same as extractAll = true
+			// Ask for exclusions when extracting all tracks
+			exclusionInput := AskTrackExclusion()
+			if exclusionInput != "" {
+				exclusion := ParseTrackExclusion(exclusionInput)
+				result.Selection.Exclusions = exclusion
+				result.ExclusionFilter = convertExclusionToString(exclusion)
+				result.Title = "Track Processing"
+				result.Message = buildExclusionOnlyMessage(exclusion)
+			} else {
+				result.Title = "Track Processing"
+				result.Message = "Extracting all subtitle tracks..."
+			}
+		} else {
+			// Ask for exclusions after selection
+			exclusionInput := AskTrackExclusion()
+			if exclusionInput != "" {
+				exclusion := ParseTrackExclusion(exclusionInput)
+				result.Selection.Exclusions = exclusion
+				result.ExclusionFilter = convertExclusionToString(exclusion)
+			}
 
-		// Ask for exclusions after selection
-		exclusionInput := AskTrackExclusion()
-		if exclusionInput != "" {
-			exclusion := ParseTrackExclusion(exclusionInput)
-			result.Selection.Exclusions = exclusion
-			result.ExclusionFilter = convertExclusionToString(exclusion)
+			// Convert to comma-separated string for processFile function
+			result.LanguageFilter = convertSelectionToString(result.Selection)
+			result.Title, result.Message = buildSelectionTitleAndMessage(result.Selection, result.Selection.Exclusions)
 		}
-
-		// Convert to comma-separated string for processFile function
-		result.LanguageFilter = convertSelectionToString(result.Selection)
-		result.Title, result.Message = buildSelectionTitleAndMessage(result.Selection, result.Selection.Exclusions)
 	} else {
 		// Ask for exclusions even when extracting all tracks
 		exclusionInput := AskTrackExclusion()

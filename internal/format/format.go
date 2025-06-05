@@ -240,6 +240,16 @@ func PrintPrompt(message string) {
 	BaseFg.Print(message)
 }
 
+// PrintPromptWithPlaceholder prints a user prompt with placeholder text
+func PrintPromptWithPlaceholder(message, placeholder string) {
+	fmt.Print("  ")
+	PromptColor.Print("▸ ")
+	BaseFg.Print(message)
+	if placeholder != "" {
+		BaseDim.Printf("%s ", placeholder)
+	}
+}
+
 // PrintFilter prints filter information with modern styling
 func PrintFilter(filterType string, values interface{}) {
 	fmt.Print("  ")
