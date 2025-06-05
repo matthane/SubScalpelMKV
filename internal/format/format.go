@@ -57,27 +57,8 @@ var (
 	PromptColor = BaseHighlight                             // White for prompts
 	InputColor  = BaseAccent                                // Blue accent for input
 
-	// Compatibility aliases for existing code
-	TitleWhiteColor      = BaseHighlight
-	TitleRedColor        = BaseAccent
-	HeaderColor          = SectionColor
-	ProgressBarColor     = ProgressFg
-	ProgressFillColor    = ProgressFg
-	ProgressEmptyColor   = ProgressBg
-	ProgressPercentColor = BaseHighlight
-	AccentColor          = BaseAccent
-	HighlightColor       = BaseHighlight
-	SubtleColor          = BaseDim
-	CriticalError        = ErrorColor
-	BrandColor           = BaseAccent
-	ProcessingStatus     = InfoColor
-	ImportantNotice      = WarningColor
 )
 
-// PrintTitle prints the main application title with modern styling
-func PrintTitle() {
-	PrintTitleWithVersion("")
-}
 
 // PrintTitleWithVersion prints the main application title with version number
 func PrintTitleWithVersion(version string) {
@@ -138,7 +119,7 @@ func PrintSection(title string) {
 // PrintSubSection prints a subsection header
 func PrintSubSection(title string) {
 	fmt.Println()
-	HeaderColor.Printf("● %s", title)
+	SectionColor.Printf("● %s", title)
 }
 
 // PrintSuccess prints a success message with modern styling
@@ -153,10 +134,6 @@ func PrintError(message string) {
 	BaseFg.Println(message)
 }
 
-// PrintCriticalError prints a critical error with prominent background
-func PrintCriticalError(message string) {
-	CriticalError.Printf(" ❌ %s", message)
-}
 
 // PrintWarning prints a warning message with modern styling
 func PrintWarning(message string) {
@@ -180,38 +157,10 @@ func PrintStep(step int, message string) {
 	BaseFg.Println(message)
 }
 
-// PrintTrackInfo prints formatted track information
-func PrintTrackInfo(trackNum int, language, trackName, codecType string, forced, defaultTrack bool) {
-	PrintTrackInfoWithType(trackNum, "", language, trackName, codecType, forced, defaultTrack)
-}
-
 // PrintTrackInfoWithLanguageName prints formatted track information with full language name
 func PrintTrackInfoWithLanguageName(trackNum int, language, languageName, trackName, codecType string, forced, defaultTrack bool) {
-	PrintTrackInfoWithTypeAndLanguageName(trackNum, "", language, languageName, trackName, codecType, forced, defaultTrack)
-}
-
-// PrintTrackInfoWithType prints formatted track information with type-specific colors
-func PrintTrackInfoWithType(trackNum int, trackType, language, trackName, codecType string, forced, defaultTrack bool) {
-	PrintTrackInfoWithTypeAndLanguageName(trackNum, trackType, language, "", trackName, codecType, forced, defaultTrack)
-}
-
-// PrintTrackInfoWithTypeAndLanguageName prints formatted track information with type-specific colors and full language name
-func PrintTrackInfoWithTypeAndLanguageName(trackNum int, trackType, language, languageName, trackName, codecType string, forced, defaultTrack bool) {
-	var trackColor *color.Color
-
-	// Choose color based on track type
-	switch strings.ToLower(trackType) {
-	case "video":
-		trackColor = VideoTrackColor
-	case "audio":
-		trackColor = AudioTrackColor
-	case "subtitle", "subtitles":
-		trackColor = SubtitleTrackColor
-	case "chapter", "chapters":
-		trackColor = ChapterTrackColor
-	default:
-		trackColor = TrackNumberColor
-	}
+	// Use white for the track indicator
+	trackColor := BaseHighlight
 
 	// First line: Track info
 	// Print each part separately to avoid ANSI code length issues
@@ -299,24 +248,11 @@ func PrintFilter(filterType string, values interface{}) {
 	BaseDim.Println(" (filtered)")
 }
 
-// PrintProgressWithPercentage prints file processing progress
-func PrintProgressWithPercentage(filename string, percentage int) {
-	ProcessingStatus.Printf(" 🎬 Processing ")
-	fmt.Print(" ")
-	BrandColor.Printf("%s ", filename)
-	HighlightColor.Printf("(%d%% complete)\n", percentage)
-}
-
-// PrintProgressComplete prints completion message with modern styling
-func PrintProgressComplete(message string) {
-	SuccessColor.Print("  ✓ ")
-	BaseFg.Println(message)
-}
 
 // PrintUsageSection prints a help section with title
 func PrintUsageSection(title, content string) {
 	fmt.Println()
-	HeaderColor.Printf("%s:", title)
+	SectionColor.Printf("%s:", title)
 	fmt.Print(content)
 }
 
@@ -325,15 +261,6 @@ func PrintExample(command string) {
 	InputColor.Printf("  %s\n", command)
 }
 
-// PrintImportantNotice prints a highlighted notice
-func PrintImportantNotice(message string) {
-	ImportantNotice.Printf(" ⚠ %s", message)
-}
-
-// PrintPlain prints text without color formatting
-func PrintPlain(message string) {
-	fmt.Println(message)
-}
 
 // DrawBoxBottom draws the bottom of a box with modern styling
 func DrawBoxBottom(width int) {
