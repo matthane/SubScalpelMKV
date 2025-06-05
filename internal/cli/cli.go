@@ -276,7 +276,8 @@ func ShowHelp() {
   -d, --dry-run              Show what would be extracted without performing extraction
   -c, --config               Use default configuration profile
   -p, --profile <name>       Use named configuration profile
-  -h, --help                 Show this help message`)
+  -h, --help                 Show this help message
+  -v, --version              Show version information`)
 
 	format.PrintUsageSection("Examples", "")
 	format.PrintExample("subscalpelmkv -i video.mkv")

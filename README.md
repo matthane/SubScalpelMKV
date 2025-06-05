@@ -318,6 +318,7 @@ profiles:
 | `--config` | `-c` | Use default configuration |
 | `--profile` | `-p` | Use named profile |
 | `--help` | `-h` | Show help |
+| `--version` | `-v` | Show version information |
 
 ## Examples
 

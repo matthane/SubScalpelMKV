@@ -24,7 +24,7 @@ const (
 	ErrCodeFailure = 1
 )
 
-var Version = "1.0.0"
+var Version = "1.1.0"
 
 // processFile handles the actual subtitle extraction logic
 func processFile(inputFileName, languageFilter, exclusionFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
@@ -322,10 +322,13 @@ func main() {
 
 	args := os.Args[1:]
 
-	// Check for help flags first
+	// Check for help and version flags first
 	for _, arg := range args {
 		if arg == "-h" || arg == "--help" {
 			cli.ShowHelp()
+			os.Exit(ErrCodeSuccess)
+		}
+		if arg == "-v" || arg == "--version" {
 			os.Exit(ErrCodeSuccess)
 		}
 	}
@@ -452,12 +455,13 @@ func main() {
 		DryRun         bool   `short:"d" long:"dry-run" description:"Show what would be extracted without performing extraction"`
 		UseConfig      bool   `short:"c" long:"config" description:"Use default configuration profile"`
 		Profile        string `short:"p" long:"profile" description:"Use named configuration profile"`
+		Version        bool   `short:"v" long:"version" description:"Show version information"`
 	}{}
 
 	_, cmdErr := gocmd.New(gocmd.Options{
 		Name:        "subscalpelmkv",
 		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files. Use CLI or drag-and-drop directories and MKV files",
-		Version:     "1.0.0",
+		Version:     "1.1.0",
 		Flags:       &flags,
 		ConfigType:  gocmd.ConfigTypeAuto,
 	})
