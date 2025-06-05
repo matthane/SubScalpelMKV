@@ -8,6 +8,7 @@ A cross-platform command-line tool for extracting subtitle tracks from MKV files
 - [Quick Start](#quick-start)
 - [Installation](#installation)
   - [Requirements](#requirements)
+  - [Download Pre-built Binary](#download-pre-built-binary)
   - [Building from Source](#building-from-source)
 - [Usage](#usage)
   - [Interactive Mode](#interactive-mode)
@@ -65,12 +66,31 @@ A cross-platform command-line tool for extracting subtitle tracks from MKV files
 
 ### Requirements
 
-- Go 1.16 or later
 - MKVToolNix (`mkvmerge` and `mkvextract`)
+
+### Download Pre-built Binary
+
+Download the latest release for your platform from the [releases page](https://github.com/matthane/subscalpelmkv/releases):
+
+- **Linux x86_64**: `subscalpelmkv_Linux_x86_64.tar.gz`
+- **Linux ARM64**: `subscalpelmkv_Linux_arm64.tar.gz`
+- **macOS Intel**: `subscalpelmkv_Darwin_x86_64.tar.gz`
+- **macOS Apple Silicon**: `subscalpelmkv_Darwin_arm64.tar.gz`
+- **Windows x86_64**: `subscalpelmkv_Windows_x86_64.zip`
+
+After downloading:
+
+1. Extract the archive (tar.gz or zip)
+2. The binary is named `subscalpelmkv` (or `subscalpelmkv.exe` on Windows)
+3. Make it executable (Linux/macOS): `chmod +x subscalpelmkv`
+4. Move it to a directory in your PATH or run it from the current directory
+5. Install [MKVToolNix](https://mkvtoolnix.download/) and ensure it's in your PATH
 
 ### Building from Source
 
-1. Install [Go](https://golang.org/dl/) and [MKVToolNix](https://mkvtoolnix.download/)
+If you prefer to build from source:
+
+1. Install [Go](https://golang.org/dl/) 1.16 or later
    
 2. Clone and build:
    ```sh
@@ -81,8 +101,6 @@ A cross-platform command-line tool for extracting subtitle tracks from MKV files
    # For Windows
    go build -o subscalpelmkv.exe cmd/subscalpelmkv/main.go
    ```
-
-3. Ensure MKVToolNix is in your PATH
 
 ## Usage
 
