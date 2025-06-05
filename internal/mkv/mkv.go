@@ -16,6 +16,38 @@ import (
 	"subscalpelmkv/internal/util"
 )
 
+// printExtractedTrackSuccess prints the extraction success message in a two-line format matching dry-run style
+func printExtractedTrackSuccess(trackNumber int, track model.MKVTrack, outFileName string) {
+	// Get codec type for display
+	codecType := "Unknown"
+	if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
+		codecType = strings.ToUpper(ext)
+	}
+
+	// Build track details string
+	trackDetails := fmt.Sprintf("Track %d (%s)", trackNumber, track.Properties.Language)
+	if track.Properties.TrackName != "" {
+		trackDetails += fmt.Sprintf(" - %s", track.Properties.TrackName)
+	}
+
+	// Add format and attributes
+	attributes := []string{codecType}
+	if track.Properties.Forced {
+		attributes = append(attributes, "forced")
+	}
+	if track.Properties.Default {
+		attributes = append(attributes, "default")
+	}
+
+	// First line: Track details with checkmark
+	format.SuccessColor.Print("  ✓ ")
+	format.BaseFg.Println(fmt.Sprintf("%s [%s]", trackDetails, strings.Join(attributes, ", ")))
+
+	// Second line: Output path with arrow
+	format.PrintExample(fmt.Sprintf("    → %s", outFileName))
+	fmt.Println()
+}
+
 // GetTrackInfo gets track information from an MKV file using mkvmerge -J
 func GetTrackInfo(inputFileName string) (*model.MKVInfo, error) {
 	out, cmdErr := exec.Command("mkvmerge", "-J", inputFileName).Output()
@@ -58,10 +90,11 @@ func ExtractSubtitles(inputFileName string, track model.MKVTrack, outFileName st
 		baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 		idxFileName := baseFileName + ".idx"
 		subFileName := baseFileName + ".sub"
-		format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s + %s", originalTrackNumber, track.Properties.Language,
-			filepath.Base(idxFileName), filepath.Base(subFileName)))
+		// For VOBSUB, show both files in the output path
+		combinedOutput := fmt.Sprintf("%s + %s", filepath.Base(idxFileName), filepath.Base(subFileName))
+		printExtractedTrackSuccess(originalTrackNumber, track, combinedOutput)
 	} else {
-		format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s", originalTrackNumber, track.Properties.Language, outFileName))
+		printExtractedTrackSuccess(originalTrackNumber, track, outFileName)
 	}
 	return nil
 }
@@ -106,10 +139,11 @@ func ExtractMultipleSubtitles(inputFileName string, tracks []TrackExtractionInfo
 			baseFileName := strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 			idxFileName := baseFileName + ".idx"
 			subFileName := baseFileName + ".sub"
-			format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s + %s", originalTrack.Properties.Number, track.Properties.Language,
-				filepath.Base(idxFileName), filepath.Base(subFileName)))
+			// For VOBSUB, show both files in the output path
+			combinedOutput := fmt.Sprintf("%s + %s", filepath.Base(idxFileName), filepath.Base(subFileName))
+			printExtractedTrackSuccess(originalTrack.Properties.Number, track, combinedOutput)
 		} else {
-			format.PrintSuccess(fmt.Sprintf("Extracted track ID %d (%s) -> %s", originalTrack.Properties.Number, track.Properties.Language, outFileName))
+			printExtractedTrackSuccess(originalTrack.Properties.Number, track, outFileName)
 		}
 	}
 

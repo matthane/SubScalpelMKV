@@ -131,7 +131,6 @@ func PrintSection(title string) {
 func PrintSubSection(title string) {
 	fmt.Println()
 	HeaderColor.Printf("● %s", title)
-	fmt.Println()
 }
 
 // PrintSuccess prints a success message with modern styling
@@ -149,7 +148,6 @@ func PrintError(message string) {
 // PrintCriticalError prints a critical error with prominent background
 func PrintCriticalError(message string) {
 	CriticalError.Printf(" ❌ %s", message)
-	fmt.Println()
 }
 
 // PrintWarning prints a warning message with modern styling
@@ -311,7 +309,6 @@ func PrintProgressComplete(message string) {
 func PrintUsageSection(title, content string) {
 	fmt.Println()
 	HeaderColor.Printf("%s:", title)
-	fmt.Println()
 	fmt.Print(content)
 }
 
@@ -323,7 +320,6 @@ func PrintExample(command string) {
 // PrintImportantNotice prints a highlighted notice
 func PrintImportantNotice(message string) {
 	ImportantNotice.Printf(" ⚠ %s", message)
-	fmt.Println()
 }
 
 // PrintPlain prints text without color formatting

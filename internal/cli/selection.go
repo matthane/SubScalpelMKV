@@ -15,6 +15,7 @@ type SelectionResult struct {
 	ExclusionFilter string
 	Selection       model.TrackSelection
 	Message         string
+	Title           string
 }
 
 // ProcessSelectionAndExclusion handles the common logic for processing track selections and exclusions
@@ -40,7 +41,7 @@ func ProcessSelectionAndExclusion(extractAll bool) (*SelectionResult, error) {
 
 		// Convert to comma-separated string for processFile function
 		result.LanguageFilter = convertSelectionToString(result.Selection)
-		result.Message = buildSelectionMessage(result.Selection, result.Selection.Exclusions)
+		result.Title, result.Message = buildSelectionTitleAndMessage(result.Selection, result.Selection.Exclusions)
 	} else {
 		// Ask for exclusions even when extracting all tracks
 		exclusionInput := AskTrackExclusion()
@@ -48,8 +49,10 @@ func ProcessSelectionAndExclusion(extractAll bool) (*SelectionResult, error) {
 			exclusion := ParseTrackExclusion(exclusionInput)
 			result.Selection.Exclusions = exclusion
 			result.ExclusionFilter = convertExclusionToString(exclusion)
+			result.Title = "Track Processing"
 			result.Message = buildExclusionOnlyMessage(exclusion)
 		} else {
+			result.Title = "Track Processing"
 			result.Message = "Extracting all subtitle tracks..."
 		}
 	}
@@ -73,8 +76,9 @@ func ProcessSelectionForBatch(selection model.TrackSelection, exclusion model.Tr
 	}
 
 	if result.LanguageFilter != "" {
-		result.Message = buildSelectionMessage(selection, exclusion)
+		result.Title, result.Message = buildSelectionTitleAndMessage(selection, exclusion)
 	} else if result.ExclusionFilter != "" {
+		result.Title = "Track Processing"
 		result.Message = buildExclusionOnlyMessage(exclusion)
 	}
 
@@ -103,8 +107,8 @@ func convertExclusionToString(exclusion model.TrackExclusion) string {
 	return strings.Join(exclusionParts, ",")
 }
 
-// buildSelectionMessage builds a user-friendly message for the selection and exclusion
-func buildSelectionMessage(selection model.TrackSelection, exclusion model.TrackExclusion) string {
+// buildSelectionTitleAndMessage builds a user-friendly title and message for the selection and exclusion
+func buildSelectionTitleAndMessage(selection model.TrackSelection, exclusion model.TrackExclusion) (string, string) {
 	var messageParts []string
 	if len(selection.LanguageCodes) > 0 {
 		messageParts = append(messageParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ",")))
@@ -117,7 +121,7 @@ func buildSelectionMessage(selection model.TrackSelection, exclusion model.Track
 	}
 
 	if len(messageParts) == 0 {
-		return ""
+		return "", ""
 	}
 
 	baseMessage := fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
@@ -140,7 +144,7 @@ func buildSelectionMessage(selection model.TrackSelection, exclusion model.Track
 		}
 	}
 
-	return baseMessage
+	return "Track Processing", baseMessage
 }
 
 // buildExclusionOnlyMessage builds a message when only exclusions are specified

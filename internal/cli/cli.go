@@ -68,6 +68,7 @@ func AskTrackExclusion() string {
 	format.PrintPrompt("Exclusions: ")
 
 	input, err := reader.ReadString('\n')
+	fmt.Println()
 	if err != nil {
 		format.PrintError(fmt.Sprintf("Error reading input: %v", err))
 		return ""
@@ -510,9 +511,9 @@ func HandleDragAndDropModeWithConfig(inputFileName string, processFileFunc func(
 	}
 
 	if selectionResult.Message != "" {
+		format.PrintSubSection(selectionResult.Title)
 		format.PrintInfo(selectionResult.Message)
 	}
-	fmt.Println()
 
 	err = processFileFunc(inputFileName, selectionResult.LanguageFilter, selectionResult.ExclusionFilter, false, outputConfig, false)
 	if err != nil {

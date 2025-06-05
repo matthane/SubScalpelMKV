@@ -65,7 +65,6 @@ func (p *Processor) Process(processFunc ProcessFileFunc, languageFilter, exclusi
 
 // PrintSummary displays the batch processing summary
 func (p *Processor) PrintSummary(result *ProcessingResult) {
-	fmt.Println()
 	format.PrintSubSection("Batch Processing Summary")
 	format.PrintInfo(fmt.Sprintf("Total files: %d", result.TotalFiles))
 	format.PrintSuccess(fmt.Sprintf("Successfully processed: %d", result.SuccessCount))

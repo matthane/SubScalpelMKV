@@ -104,23 +104,22 @@ func processFile(inputFileName, languageFilter, exclusionFilter string, showFilt
 
 		format.PrintSubSection("Dry Run - Would Extract")
 		format.PrintInfo(fmt.Sprintf("Would extract %d track(s) from: %s", len(selectedOriginalTracks), filepath.Base(inputFileName)))
-		fmt.Println()
 
 		for _, track := range selectedOriginalTracks {
 			outFileName := util.BuildSubtitlesFileNameWithConfig(inputFileName, track, outputConfig)
-			
+
 			// Get codec type for display
 			codecType := "Unknown"
 			if ext, exists := model.SubtitleExtensionByCodec[track.Properties.CodecId]; exists {
 				codecType = strings.ToUpper(ext)
 			}
-			
+
 			// Build track details string
 			trackDetails := fmt.Sprintf("Track %d (%s)", track.Properties.Number, track.Properties.Language)
 			if track.Properties.TrackName != "" {
 				trackDetails += fmt.Sprintf(" - %s", track.Properties.TrackName)
 			}
-			
+
 			// Add format and attributes
 			attributes := []string{codecType}
 			if track.Properties.Forced {
@@ -129,18 +128,18 @@ func processFile(inputFileName, languageFilter, exclusionFilter string, showFilt
 			if track.Properties.Default {
 				attributes = append(attributes, "default")
 			}
-			
+
 			format.BorderColor.Print("  ")
 			format.BaseHighlight.Print("▪")
 			fmt.Print(" ")
 			format.BaseFg.Println(fmt.Sprintf("%s [%s]", trackDetails, strings.Join(attributes, ", ")))
 			format.PrintExample(fmt.Sprintf("    → %s", outFileName))
-			fmt.Println()
 		}
 
 		return nil
 	}
 
+	fmt.Println()
 	// Step 1: Create .mks file with only selected subtitle tracks
 	mksFileName, mksErr := mkv.CreateSubtitlesMKS(inputFileName, selection, util.MatchesTrackSelection, outputConfig)
 	if mksErr != nil {
@@ -156,6 +155,7 @@ func processFile(inputFileName, languageFilter, exclusionFilter string, showFilt
 		return err
 	}
 
+	fmt.Println()
 	// Step 2: Extract subtitles
 	format.PrintStep(2, "Extracting subtitle tracks...")
 
@@ -216,7 +216,7 @@ func processBatch(pattern, languageFilter, exclusionFilter string, showFilterMes
 	}
 
 	format.PrintInfo(fmt.Sprintf("Found %d MKV file(s) to process", len(mkvFiles)))
-	
+
 	if showFilterMessage && languageFilter != "" {
 		selection := cli.ParseTrackSelection(languageFilter)
 		exclusion := cli.ParseTrackExclusion(exclusionFilter)
@@ -247,16 +247,16 @@ func processBatch(pattern, languageFilter, exclusionFilter string, showFilterMes
 // handleBatchDragAndDrop handles drag-and-drop of multiple MKV files
 func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) error {
 	format.PrintInfo(fmt.Sprintf("Batch drag-and-drop detected: %d MKV files", len(mkvFiles)))
-	
+
 	// Analyze each file to gather subtitle information
 	batchFileInfos := batch.AnalyzeFiles(mkvFiles)
-	
+
 	// Display all files using the same visual style as subtitle tracks
 	cli.DisplayBatchFiles(batchFileInfos)
-	
+
 	// Ask user if they want to extract all tracks or make a selection
 	extractAll := cli.AskUserConfirmation()
-	
+
 	// Process selection and exclusion using the shared function
 	selectionResult, err := cli.ProcessSelectionAndExclusion(extractAll)
 	if err != nil {
@@ -264,34 +264,34 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 		fmt.Scanln()
 		return nil
 	}
-	
+
 	if selectionResult.Message != "" {
+		format.PrintSubSection(selectionResult.Title)
 		format.PrintInfo(selectionResult.Message)
 	}
-	fmt.Println()
-	
+
 	// Filter out files that had analysis errors and prepare valid files for processing
 	validFiles := batch.FilterValidFiles(batchFileInfos)
-	
+
 	if len(validFiles) == 0 {
 		format.PrintError("No valid MKV files to process")
 		fmt.Println("Press Enter to exit...")
 		fmt.Scanln()
 		return fmt.Errorf("no valid files to process")
 	}
-	
+
 	// Use the batch processor for consistent handling
 	processor := batch.NewProcessor(validFiles, outputConfig, false)
 	result, _ := processor.Process(processFile, selectionResult.LanguageFilter, selectionResult.ExclusionFilter)
 	processor.PrintSummary(result)
-	
+
 	fmt.Println("Press Enter to exit...")
 	fmt.Scanln()
-	
+
 	if result.ErrorCount > 0 {
 		return fmt.Errorf("batch processing completed with %d errors", result.ErrorCount)
 	}
-	
+
 	return nil
 }
 
@@ -312,7 +312,7 @@ func main() {
 	hasOutputFlagWithoutValue := false
 	modifiedArgs := make([]string, len(args))
 	copy(modifiedArgs, args)
-	
+
 	for i, arg := range args {
 		if arg == "-o" || arg == "--output-dir" {
 			// Check if next argument exists and doesn't start with '-'
@@ -324,7 +324,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	// Replace the original os.Args with our modified version for gocmd
 	originalArgs := os.Args
 	os.Args = append([]string{os.Args[0]}, modifiedArgs...)
@@ -339,7 +339,7 @@ func main() {
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
-		
+
 		// If we found multiple valid MKV files (from files or directories), handle as batch
 		if len(validMKVFiles) > 1 {
 			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
@@ -349,7 +349,7 @@ func main() {
 			}
 			os.Exit(ErrCodeSuccess)
 		}
-		
+
 		// If we found exactly one valid file, process it
 		if len(validMKVFiles) == 1 {
 			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
@@ -359,17 +359,17 @@ func main() {
 			}
 			os.Exit(ErrCodeSuccess)
 		}
-		
+
 		// If no valid files found, try the traditional approach (joining with spaces for filenames with spaces)
 		inputFileName := strings.Join(args, " ")
-		
+
 		if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
 			format.PrintError(fmt.Sprintf("File does not exist: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
 			fmt.Scanln()
 			os.Exit(ErrCodeFailure)
 		}
-		
+
 		// Check if it's a directory
 		if info, _ := os.Stat(inputFileName); info.IsDir() {
 			format.PrintInfo(fmt.Sprintf("Scanning directory: %s", inputFileName))
@@ -380,16 +380,16 @@ func main() {
 				fmt.Scanln()
 				os.Exit(ErrCodeFailure)
 			}
-			
+
 			if len(files) == 0 {
 				format.PrintError("No MKV files found in the directory")
 				fmt.Println("Press Enter to exit...")
 				fmt.Scanln()
 				os.Exit(ErrCodeFailure)
 			}
-			
+
 			defaultOutputConfig := util.BuildOutputConfig("", "", false, false)
-			
+
 			if len(files) == 1 {
 				err = cli.HandleDragAndDropModeWithConfig(files[0], processFile, defaultOutputConfig)
 				if err != nil {
@@ -403,7 +403,7 @@ func main() {
 			}
 			os.Exit(ErrCodeSuccess)
 		}
-		
+
 		if !util.IsMKVFile(inputFileName) {
 			format.PrintError(fmt.Sprintf("File is not an MKV file: %s", inputFileName))
 			fmt.Println("Press Enter to exit...")
@@ -434,7 +434,7 @@ func main() {
 
 	_, cmdErr := gocmd.New(gocmd.Options{
 		Name:        "subscalpelmkv",
-		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files quickly and precisely. Supports drag-and-drop: simply drag an MKV file onto the executable.",
+		Description: "SubScalpelMKV - Extract subtitle tracks from MKV files. Use CLI or drag-and-drop directories and MKV files",
 		Version:     "1.0.0",
 		Flags:       &flags,
 		ConfigType:  gocmd.ConfigTypeAuto,
@@ -469,13 +469,13 @@ func main() {
 			OutputTemplate: flags.OutputTemplate,
 			OutputDir:      flags.OutputDir,
 		}
-		
+
 		// Parse languages from Select flag if provided
 		if flags.Select != "" {
 			selection := cli.ParseTrackSelection(flags.Select)
 			cliFlags.Languages = selection.LanguageCodes
 		}
-		
+
 		// Parse exclusions from Exclude flag if provided
 		if flags.Exclude != "" {
 			exclusion := cli.ParseTrackExclusion(flags.Exclude)
@@ -505,9 +505,9 @@ func main() {
 		}
 	}
 
-	if (flags.Extract != "" && flags.Info != "") || 
-	   (flags.Extract != "" && flags.Batch != "") || 
-	   (flags.Info != "" && flags.Batch != "") {
+	if (flags.Extract != "" && flags.Info != "") ||
+		(flags.Extract != "" && flags.Batch != "") ||
+		(flags.Info != "" && flags.Batch != "") {
 		format.PrintError("Cannot use multiple processing flags simultaneously (--extract, --batch, --info)")
 		os.Exit(ErrCodeFailure)
 	}
@@ -517,7 +517,7 @@ func main() {
 		selectionFilter := cli.BuildSelectionFilter(flags.Select)
 
 		outputConfig := util.BuildOutputConfig(flags.OutputDir, flags.OutputTemplate, hasOutputFlagWithoutValue, false)
-		
+
 		// Resolve special output directory for single file
 		if outputConfig.OutputDir == "__BASENAME_SUBTITLES__" {
 			outputConfig.OutputDir = util.ResolveOutputDirectory(outputConfig.OutputDir, inputFileName)
@@ -549,7 +549,7 @@ func main() {
 	}
 
 	os.Exit(ErrCodeSuccess)
-	
+
 	// Restore original args
 	os.Args = originalArgs
 }
