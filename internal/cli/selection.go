@@ -104,35 +104,9 @@ func ProcessSelectionAndExclusion(extractAll bool, availableTracks []int) (*Sele
 			result.Title, result.Message = buildSelectionTitleAndMessage(result.Selection, result.Selection.Exclusions)
 		}
 	} else {
-		// Ask for exclusions even when extracting all tracks
-		var exclusionInput string
-		var validExclusion bool
-		for !validExclusion {
-			exclusionInput = AskTrackExclusion()
-			if exclusionInput != "" {
-				var invalidItems []string
-				var exclusion model.TrackExclusion
-				exclusion, invalidItems = ParseTrackExclusionWithValidation(exclusionInput, availableTracks)
-				
-				if len(invalidItems) > 0 {
-					// Show warning and ask to retry
-					for _, item := range invalidItems {
-						format.PrintWarning(fmt.Sprintf("Unknown exclusion language code, format, or invalid track ID '%s'", item))
-					}
-					fmt.Println() // Add spacing
-					continue
-				}
-				
-				result.Selection.Exclusions = exclusion
-				result.ExclusionFilter = convertExclusionToString(exclusion)
-				result.Title = "Track Processing"
-				result.Message = buildExclusionOnlyMessage(exclusion)
-			} else {
-				result.Title = "Track Processing"
-				result.Message = "Extracting all subtitle tracks..."
-			}
-			validExclusion = true
-		}
+		// When extracting all tracks, don't ask for exclusions - just extract everything
+		result.Title = "Track Processing"
+		result.Message = "Extracting all subtitle tracks..."
 	}
 
 	return result, nil

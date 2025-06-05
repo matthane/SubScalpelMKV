@@ -212,8 +212,11 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		"--no-track-tags",
 	}
 
-	// Add subtitle track selection - only include matching tracks
-	if len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 || len(selection.FormatFilters) > 0 {
+	// Add subtitle track selection - always specify which tracks to include when we have selections or exclusions
+	hasSelectionCriteria := len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 || len(selection.FormatFilters) > 0
+	hasExclusionCriteria := len(selection.Exclusions.LanguageCodes) > 0 || len(selection.Exclusions.TrackNumbers) > 0 || len(selection.Exclusions.FormatFilters) > 0
+	
+	if hasSelectionCriteria || hasExclusionCriteria {
 		subtitleTracks := strings.Join(selectedTrackIDs, ",")
 		args = append(args, "--subtitle-tracks", subtitleTracks)
 
