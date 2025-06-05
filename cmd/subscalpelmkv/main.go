@@ -24,6 +24,8 @@ const (
 	ErrCodeFailure = 1
 )
 
+var Version = "1.0.0"
+
 // processFile handles the actual subtitle extraction logic
 func processFile(inputFileName, languageFilter, exclusionFilter string, showFilterMessage bool, outputConfig model.OutputConfig, dryRun bool) error {
 	var selection model.TrackSelection
@@ -296,7 +298,7 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 }
 
 func main() {
-	format.PrintTitle()
+	format.PrintTitleWithVersion(Version)
 
 	args := os.Args[1:]
 

@@ -76,6 +76,11 @@ var (
 
 // PrintTitle prints the main application title with modern styling
 func PrintTitle() {
+	PrintTitleWithVersion("")
+}
+
+// PrintTitleWithVersion prints the main application title with version number
+func PrintTitleWithVersion(version string) {
 	titleWidth := 30 // Fixed width for title box
 	
 	// Top border with title
@@ -95,6 +100,9 @@ func PrintTitle() {
 	
 	// Middle line
 	subtitle := "Extract MKV Subtitles"
+	if version != "" {
+		subtitle = fmt.Sprintf("Extract MKV Subtitles v%s", version)
+	}
 	subtitleLen := len(subtitle)
 	padding := titleWidth - subtitleLen - 2 // -2 for "│ " at start
 	
