@@ -58,7 +58,10 @@ A cross-platform command-line tool for extracting subtitle tracks from MKV files
 # Extract from multiple files
 ./subscalpelmkv -b "*.mkv" -s eng,spa
 
-# Preview what would be extracted
+# Show track information
+./subscalpelmkv -i video.mkv
+
+# Preview what would be extracted (filename and output path)
 ./subscalpelmkv -x movie.mkv -s eng --dry-run
 ```
 
