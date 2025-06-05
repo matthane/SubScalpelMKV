@@ -239,6 +239,11 @@ func ShowProgressBar(percentage int) {
 	progress.ShowProgressBar(percentage)
 }
 
+// UpdateElapsedTime updates only the elapsed time without changing the percentage
+func UpdateElapsedTime() {
+	progress.UpdateElapsedTime()
+}
+
 // ResetProgressBar resets the progress bar for a new operation
 func ResetProgressBar() {
 	progress.ResetProgressBar()

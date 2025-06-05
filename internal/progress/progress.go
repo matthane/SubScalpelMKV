@@ -16,6 +16,7 @@ var (
 	startTime   time.Time
 	once        sync.Once
 	barWidth    = 60
+	mu          sync.Mutex
 )
 
 // ProgressTheme defines the characters used for the progress bar
@@ -37,6 +38,9 @@ var defaultTheme = ProgressTheme{
 
 // ShowProgressBar displays a progress bar based on percentage
 func ShowProgressBar(percentage int) {
+	mu.Lock()
+	defer mu.Unlock()
+	
 	// Initialize only once
 	once.Do(func() {
 		startTime = time.Now()
@@ -49,6 +53,17 @@ func ShowProgressBar(percentage int) {
 
 	if percentage >= 100 {
 		fmt.Printf("\n")
+	}
+}
+
+// UpdateElapsedTime updates only the elapsed time without changing the percentage
+func UpdateElapsedTime() {
+	mu.Lock()
+	defer mu.Unlock()
+	
+	// Don't update if we've already reached 100%
+	if !startTime.IsZero() && lastPercent < 100 {
+		renderProgressBar(lastPercent)
 	}
 }
 
@@ -118,6 +133,9 @@ func renderProgressBar(percentage int) {
 
 // ResetProgressBar resets the progress bar for a new operation
 func ResetProgressBar() {
+	mu.Lock()
+	defer mu.Unlock()
+	
 	once = sync.Once{}
 	lastPercent = 0
 	startTime = time.Time{}

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"subscalpelmkv/internal/format"
 	"subscalpelmkv/internal/model"
@@ -237,19 +238,58 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		return "", fmt.Errorf("failed to create stdout pipe: %v", err)
 	}
 
+	// Also capture stderr to prevent blocking if mkvmerge writes errors/warnings
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to create stderr pipe: %v", err)
+	}
+
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("failed to start mkvmerge: %v", err)
 	}
 
+	// Start a goroutine to consume stderr to prevent blocking
+	var stderrOutput strings.Builder
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		// Increase buffer size for stderr as well
+		buf := make([]byte, 0, 64*1024)
+		scanner.Buffer(buf, 1024*1024)
+		
+		for scanner.Scan() {
+			stderrOutput.WriteString(scanner.Text() + "\n")
+		}
+	}()
+
 	// Hide cursor for cleaner progress display
 	fmt.Print("\033[?25l")
-
-	// Monitor stdout for progress information
-	scanner := bufio.NewScanner(stdout)
 
 	// Show initial 0% progress bar immediately
 	util.ShowProgressBar(0)
 
+	// Create a ticker to update elapsed time every 100ms
+	ticker := time.NewTicker(100 * time.Millisecond)
+	done := make(chan bool)
+	
+	// Start goroutine to update elapsed time
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				util.UpdateElapsedTime()
+			case <-done:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	// Monitor stdout for progress information
+	scanner := bufio.NewScanner(stdout)
+	// Increase buffer size to handle potentially long lines
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024) // Allow up to 1MB lines
+	
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -258,6 +298,8 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		}
 	}
 
+	// Stop the ticker
+	done <- true
 	cmdErr := cmd.Wait()
 
 	// Show cursor again
@@ -267,6 +309,10 @@ func CreateSubtitlesMKS(inputFileName string, selection model.TrackSelection, ma
 		// Clear the progress line before showing error
 		fmt.Print("\r\033[K")
 		format.PrintError(fmt.Sprintf("Error creating temporary subtitle file: %v", cmdErr))
+		// If there was stderr output, display it for debugging
+		if stderrStr := stderrOutput.String(); stderrStr != "" {
+			format.PrintError(fmt.Sprintf("mkvmerge stderr: %s", strings.TrimSpace(stderrStr)))
+		}
 		return "", cmdErr
 	}
 
