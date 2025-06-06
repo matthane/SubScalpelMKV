@@ -69,7 +69,7 @@ func ProcessSelectionAndExclusion(extractAll bool, availableTracks []int) (*Sele
 					result.Message = buildExclusionOnlyMessage(exclusion)
 				} else {
 					result.Title = "Track Processing"
-					result.Message = "Extracting all subtitle tracks..."
+					result.Message = "Extracting all subtitle tracks"
 				}
 				validExclusion = true
 			}
@@ -106,7 +106,7 @@ func ProcessSelectionAndExclusion(extractAll bool, availableTracks []int) (*Sele
 	} else {
 		// When extracting all tracks, don't ask for exclusions - just extract everything
 		result.Title = "Track Processing"
-		result.Message = "Extracting all subtitle tracks..."
+		result.Message = "Extracting all subtitle tracks"
 	}
 
 	return result, nil
@@ -163,36 +163,44 @@ func convertExclusionToString(exclusion model.TrackExclusion) string {
 func buildSelectionTitleAndMessage(selection model.TrackSelection, exclusion model.TrackExclusion) (string, string) {
 	var messageParts []string
 	if len(selection.LanguageCodes) > 0 {
-		messageParts = append(messageParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ",")))
+		messageParts = append(messageParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ", ")))
 	}
 	if len(selection.TrackNumbers) > 0 {
-		messageParts = append(messageParts, fmt.Sprintf("track IDs: %v", selection.TrackNumbers))
+		trackStrs := make([]string, len(selection.TrackNumbers))
+		for i, t := range selection.TrackNumbers {
+			trackStrs[i] = strconv.Itoa(t)
+		}
+		messageParts = append(messageParts, fmt.Sprintf("track IDs: %s", strings.Join(trackStrs, ", ")))
 	}
 	if len(selection.FormatFilters) > 0 {
-		messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ",")))
+		messageParts = append(messageParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ", ")))
 	}
 
 	if len(messageParts) == 0 {
 		return "", ""
 	}
 
-	baseMessage := fmt.Sprintf("Extracting tracks for %s", strings.Join(messageParts, ", "))
+	baseMessage := fmt.Sprintf("Selecting tracks matching %s", strings.Join(messageParts, "; "))
 
 	// Add exclusion info if present
 	if len(exclusion.LanguageCodes) > 0 || len(exclusion.TrackNumbers) > 0 || len(exclusion.FormatFilters) > 0 {
 		var exclusionMsgParts []string
 		if len(exclusion.LanguageCodes) > 0 {
-			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ", ")))
 		}
 		if len(exclusion.TrackNumbers) > 0 {
-			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+			trackStrs := make([]string, len(exclusion.TrackNumbers))
+			for i, t := range exclusion.TrackNumbers {
+				trackStrs[i] = strconv.Itoa(t)
+			}
+			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %s", strings.Join(trackStrs, ", ")))
 		}
 		if len(exclusion.FormatFilters) > 0 {
-			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+			exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ", ")))
 		}
 
 		if len(exclusionMsgParts) > 0 {
-			baseMessage = fmt.Sprintf("%s, excluding %s", baseMessage, strings.Join(exclusionMsgParts, ", "))
+			baseMessage = fmt.Sprintf("%s; excluding %s", baseMessage, strings.Join(exclusionMsgParts, "; "))
 		}
 	}
 
@@ -203,19 +211,23 @@ func buildSelectionTitleAndMessage(selection model.TrackSelection, exclusion mod
 func buildExclusionOnlyMessage(exclusion model.TrackExclusion) string {
 	var exclusionMsgParts []string
 	if len(exclusion.LanguageCodes) > 0 {
-		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ",")))
+		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ", ")))
 	}
 	if len(exclusion.TrackNumbers) > 0 {
-		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %v", exclusion.TrackNumbers))
+		trackStrs := make([]string, len(exclusion.TrackNumbers))
+		for i, t := range exclusion.TrackNumbers {
+			trackStrs[i] = strconv.Itoa(t)
+		}
+		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("track IDs: %s", strings.Join(trackStrs, ", ")))
 	}
 	if len(exclusion.FormatFilters) > 0 {
-		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ",")))
+		exclusionMsgParts = append(exclusionMsgParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ", ")))
 	}
 
 	if len(exclusionMsgParts) > 0 {
-		return fmt.Sprintf("Extracting all tracks except %s", strings.Join(exclusionMsgParts, ", "))
+		return fmt.Sprintf("Excluding tracks matching %s", strings.Join(exclusionMsgParts, "; "))
 	}
-	return "Extracting all subtitle tracks..."
+	return "Extracting all subtitle tracks"
 }
 
 // ParseTrackSelectionWithValidation parses track selection input and returns invalid items

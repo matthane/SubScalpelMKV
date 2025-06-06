@@ -258,6 +258,14 @@ func PrintFilter(filterType string, values interface{}) {
 	BaseDim.Println(" (filtered)")
 }
 
+// PrintFilterInfo prints detailed filter information with icons
+func PrintFilterInfo(message string) {
+	fmt.Print("  ")
+	InfoColor.Print("⚙")  // Settings/gear icon for filters
+	fmt.Print(" ")
+	BaseFg.Println(message)
+}
+
 
 // PrintUsageSection prints a help section with title
 func PrintUsageSection(title, content string) {

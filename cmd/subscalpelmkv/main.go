@@ -31,45 +31,16 @@ func processFile(inputFileName, languageFilter, exclusionFilter string, showFilt
 	var selection model.TrackSelection
 	if languageFilter != "" {
 		selection = cli.ParseTrackSelection(languageFilter)
-		if showFilterMessage {
-			var filterParts []string
-			if len(selection.LanguageCodes) > 0 {
-				filterParts = append(filterParts, fmt.Sprintf("languages %v", selection.LanguageCodes))
-			}
-			if len(selection.TrackNumbers) > 0 {
-				filterParts = append(filterParts, fmt.Sprintf("track IDs %v", selection.TrackNumbers))
-			}
-			if len(selection.FormatFilters) > 0 {
-				filterParts = append(filterParts, fmt.Sprintf("formats %v", selection.FormatFilters))
-			}
-
-			if len(filterParts) > 0 {
-				format.PrintFilter("Track filter", strings.Join(filterParts, ", "))
-			}
-		}
-	} else if showFilterMessage {
-		format.PrintInfo("No filter - muxing and extracting all subtitle tracks")
 	}
 
 	// Parse exclusions if provided
 	if exclusionFilter != "" {
 		selection.Exclusions = cli.ParseTrackExclusion(exclusionFilter)
-		if showFilterMessage {
-			var exclusionParts []string
-			if len(selection.Exclusions.LanguageCodes) > 0 {
-				exclusionParts = append(exclusionParts, fmt.Sprintf("languages %v", selection.Exclusions.LanguageCodes))
-			}
-			if len(selection.Exclusions.TrackNumbers) > 0 {
-				exclusionParts = append(exclusionParts, fmt.Sprintf("track IDs %v", selection.Exclusions.TrackNumbers))
-			}
-			if len(selection.Exclusions.FormatFilters) > 0 {
-				exclusionParts = append(exclusionParts, fmt.Sprintf("formats %v", selection.Exclusions.FormatFilters))
-			}
+	}
 
-			if len(exclusionParts) > 0 {
-				format.PrintFilter("Track exclusions", strings.Join(exclusionParts, ", "))
-			}
-		}
+	// Display unified filter message
+	if showFilterMessage {
+		displayFilterMessage(selection, selection.Exclusions)
 	}
 
 	if _, statErr := os.Stat(inputFileName); os.IsNotExist(statErr) {
@@ -104,7 +75,7 @@ func processFile(inputFileName, languageFilter, exclusionFilter string, showFilt
 			return nil
 		}
 
-		format.PrintSubSection("Dry Run - Would Extract")
+		format.PrintSubSection("Dry Run")
 		format.PrintInfo(fmt.Sprintf("Would extract %d track(s) from: %s", len(selectedOriginalTracks), filepath.Base(inputFileName)))
 
 		for _, track := range selectedOriginalTracks {
@@ -219,15 +190,16 @@ func processBatch(pattern, languageFilter, exclusionFilter string, showFilterMes
 
 	format.PrintInfo(fmt.Sprintf("Found %d MKV file(s) to process", len(mkvFiles)))
 
-	if showFilterMessage && languageFilter != "" {
-		selection := cli.ParseTrackSelection(languageFilter)
-		exclusion := cli.ParseTrackExclusion(exclusionFilter)
-		selectionResult := cli.ProcessSelectionForBatch(selection, exclusion)
-		if selectionResult.Message != "" {
-			format.PrintFilter("Batch filter", selectionResult.Message)
+	// Display unified filter message for batch mode
+	if showFilterMessage {
+		var selection model.TrackSelection
+		if languageFilter != "" {
+			selection = cli.ParseTrackSelection(languageFilter)
 		}
-	} else if showFilterMessage {
-		format.PrintInfo("No filter - extracting all subtitle tracks from each file")
+		if exclusionFilter != "" {
+			selection.Exclusions = cli.ParseTrackExclusion(exclusionFilter)
+		}
+		displayFilterMessage(selection, selection.Exclusions)
 	}
 
 	// Use the new batch processor
@@ -315,6 +287,74 @@ func handleBatchDragAndDrop(mkvFiles []string, outputConfig model.OutputConfig) 
 	}
 
 	return nil
+}
+
+// displayFilterMessage shows a unified filter message for selections and exclusions
+func displayFilterMessage(selection model.TrackSelection, exclusion model.TrackExclusion) {
+	// Check if we have any filters at all
+	hasSelectionFilters := len(selection.LanguageCodes) > 0 || len(selection.TrackNumbers) > 0 || len(selection.FormatFilters) > 0
+	hasExclusionFilters := len(exclusion.LanguageCodes) > 0 || len(exclusion.TrackNumbers) > 0 || len(exclusion.FormatFilters) > 0
+
+	if !hasSelectionFilters && !hasExclusionFilters {
+		format.PrintInfo("No filter - extracting all subtitle tracks")
+		return
+	}
+
+	// Build the filter message
+	var messageParts []string
+
+	// Add selection info if present
+	if hasSelectionFilters {
+		var selectionParts []string
+		if len(selection.LanguageCodes) > 0 {
+			selectionParts = append(selectionParts, fmt.Sprintf("languages: %s", strings.Join(selection.LanguageCodes, ", ")))
+		}
+		if len(selection.TrackNumbers) > 0 {
+			trackStrs := make([]string, len(selection.TrackNumbers))
+			for i, t := range selection.TrackNumbers {
+				trackStrs[i] = strconv.Itoa(t)
+			}
+			selectionParts = append(selectionParts, fmt.Sprintf("track IDs: %s", strings.Join(trackStrs, ", ")))
+		}
+		if len(selection.FormatFilters) > 0 {
+			selectionParts = append(selectionParts, fmt.Sprintf("formats: %s", strings.Join(selection.FormatFilters, ", ")))
+		}
+
+		if len(selectionParts) > 0 {
+			messageParts = append(messageParts, fmt.Sprintf("Selecting tracks matching %s", strings.Join(selectionParts, "; ")))
+		}
+	}
+
+	// Add exclusion info if present
+	if hasExclusionFilters {
+		var exclusionParts []string
+		if len(exclusion.LanguageCodes) > 0 {
+			exclusionParts = append(exclusionParts, fmt.Sprintf("languages: %s", strings.Join(exclusion.LanguageCodes, ", ")))
+		}
+		if len(exclusion.TrackNumbers) > 0 {
+			trackStrs := make([]string, len(exclusion.TrackNumbers))
+			for i, t := range exclusion.TrackNumbers {
+				trackStrs[i] = strconv.Itoa(t)
+			}
+			exclusionParts = append(exclusionParts, fmt.Sprintf("track IDs: %s", strings.Join(trackStrs, ", ")))
+		}
+		if len(exclusion.FormatFilters) > 0 {
+			exclusionParts = append(exclusionParts, fmt.Sprintf("formats: %s", strings.Join(exclusion.FormatFilters, ", ")))
+		}
+
+		if len(exclusionParts) > 0 {
+			if hasSelectionFilters {
+				messageParts = append(messageParts, fmt.Sprintf("excluding %s", strings.Join(exclusionParts, "; ")))
+			} else {
+				messageParts = append(messageParts, fmt.Sprintf("Excluding tracks matching %s", strings.Join(exclusionParts, "; ")))
+			}
+		}
+	}
+
+	// Display the unified message
+	if len(messageParts) > 0 {
+		format.PrintInfo(strings.Join(messageParts, "; "))
+	}
 }
 
 func main() {
